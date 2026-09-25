@@ -65,46 +65,46 @@ kind: dataproduct
 dataProductOwnerDisplayName: Example Owner
 status: Draft
 specific:
-	publishToInformatica: true
-	company: Example Organization
-	businessDomain: Commercial
-	businessSubdomain: Orders
-	technicalOwners: example-team
-	dataProductType: Source-aligned
-	lifeCycleStatus: Draft
-	sensitiveInfo: No
-	confidentiality: Private
-	memorizationType: No
-	creationDate: 2026-01-01
-	customAttributes:
-		businessOwner: Example Owner
-		dataClassification: Internal
+  publishToInformatica: true
+  company: Example Organization
+  businessDomain: Commercial
+  businessSubdomain: Orders
+  technicalOwners: example-team
+  dataProductType: Source-aligned
+  lifeCycleStatus: Draft
+  sensitiveInfo: No
+  confidentiality: Private
+  memorizationType: No
+  creationDate: 2026-01-01
+  customAttributes:
+    businessOwner: Example Owner
+    dataClassification: Internal
 components:
-	- id: urn:example:component:orders:1
-		kind: outputport
-		name: Orders API
-		description: Orders exposed for analytical consumption
-		version: 1.0.0
-		technology: example-technology
-		outputPortType: table
-		specific:
-			publishToInformatica: true
-			systemName: Orders System
-			serverName: example-server
-			databaseName: analytics
-			schemaName: curated
-			entityName: orders
-			entityType: table
-			isPii: false
-			creationDate: 2026-01-01
-		dataContract:
-			schema:
-				- name: order_id
-					description: Stable order identifier
-					dataType: string
-				- name: order_date
-					description: Order creation date
-					dataType: date
+  - id: urn:example:component:orders:1
+    kind: outputport
+    name: Orders API
+    description: Orders exposed for analytical consumption
+    version: 1.0.0
+    technology: example-technology
+    outputPortType: table
+    specific:
+      publishToInformatica: true
+      systemName: Orders System
+      serverName: example-server
+      databaseName: analytics
+      schemaName: curated
+      entityName: orders
+      entityType: table
+      isPii: false
+      creationDate: 2026-01-01
+    dataContract:
+      schema:
+        - name: order_id
+          description: Stable order identifier
+          dataType: string
+        - name: order_date
+          description: Order creation date
+          dataType: date
 ```
 
 The root `specific.publishToInformatica` flag is required and must be `true` for publication. If it is missing or `false`, the product is skipped. An optional component-level `specific.publishToInformatica: false` excludes only that output port. The environment can also be restricted with `INFORMATICA_PUBLISH_ALLOWED_ENV`.
@@ -131,36 +131,35 @@ Start from `src/main/resources/application.yml` and override values through a pr
 
 ```yaml
 informatica:
-	api:
-		base-url: https://example-idmc.example.com
-		username: ${INFORMATICA_DCMP_USERNAME}
-		password: ${INFORMATICA_DCMP_PASSWORD}
-	marketplace:
-		category-validation-enabled: true
-		mapping:
-			categories:
-				- descriptor-path: company
-				- descriptor-path: businessDomain
-				- descriptor-path: businessSubdomain
-			custom-attributes:
-				Business Owner:
-					descriptor-path: businessOwner
-					required: true
-				Classification:
-					descriptor-path: dataClassification
-					default-value: Internal
-					transformer: identity
-	data-catalog:
-		catalog-source:
-			enable-metadata-sync: true
-			sources:
-				example-technology: EXAMPLE_CATALOG_SOURCE
-				another-technology: ANOTHER_CATALOG_SOURCE
-		validation-level:
-			level: LOW
-			by-environment:
-				development: LOW
-				production: HIGH
+  api:
+    base-url: https://example-idmc.example.com
+    username: ${INFORMATICA_DCMP_USERNAME}
+    password: ${INFORMATICA_DCMP_PASSWORD}
+    category-validation-enabled: true
+    mapping:
+      categories:
+        - descriptor-path: company
+        - descriptor-path: businessDomain
+        - descriptor-path: businessSubdomain
+      custom-attributes:
+        Business Owner:
+          descriptor-path: businessOwner
+          required: true
+        Classification:
+          descriptor-path: dataClassification
+          default-value: Internal
+          transformer: identity
+  data-catalog:
+    catalog-source:
+      enable-metadata-sync: true
+      sources:
+        example-technology: EXAMPLE_CATALOG_SOURCE
+        another-technology: ANOTHER_CATALOG_SOURCE
+    validation-level:
+      level: LOW
+      by-environment:
+        development: LOW
+        production: HIGH
 ```
 
 `mapping.categories` defines the category hierarchy in order. Each `descriptor-path` is relative to `specific`; the configured levels must exist in the descriptor and in Informatica. `mapping.custom-attributes` maps an Informatica attribute name to a descriptor path. Attribute IDs are looked up at runtime by name, so they are not copied into YAML. `required`, `default-value`, and `transformer` control validation and conversion. The built-in transformer is `identity`; custom transformers are Spring beans implementing `DescriptorValueTransformer`.
