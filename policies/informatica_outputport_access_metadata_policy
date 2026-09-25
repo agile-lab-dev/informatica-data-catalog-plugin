@@ -1,0 +1,7 @@
+specific!: {
+
+	isPii!:         bool
+	sensitiveData?: bool
+
+	...
+}

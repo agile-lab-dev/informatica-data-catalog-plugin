@@ -1,0 +1,56 @@
+# Descriptor with INTENTIONAL violations, used by the test that thatcks error detection.
+# Expected violations:
+#   - dataproduct   : sensitiveInfo "Si" (missing accent, expected "Yes|No"), dataProductType not in enum
+#   - identification : technology "oracle" not supported
+#   - access         : isPii missing
+#   - ingestion      : feedingType "PUSHX" not in enum
+#   - schema         : column without dataType
+id: urn:dmb:dp:example-domain:example-dp:0
+name: Example Data Product
+description: Test data product with policy violations
+dataProductOwnerDisplayName: Example Owner
+version: 1.0.0
+kind: dataproduct
+specific:
+  publishToInformatica: true
+
+
+  technicalOwners: Datateam 2
+  defaultDelivery: Snowflake
+  company: Example Organization
+  businessDomain: Customer Analytics
+  businessSubdomain: Campaign Planning
+  creationDate: 2026-01-26T15:44:54.193Z
+  dataProductType: WrongType
+  lifeCycleStatus: Draft
+  sensitiveInfo: "Si"
+components:
+  - kind: outputport
+    id: urn:dmb:cmp:example-domain:example-dp:0:example-output-port
+    name: Example Output Port
+    description: Example Output Port Description
+    version: 1.0.0
+    technology: oracle
+    creationDate: "2026-01-26T15:44:54.193Z"
+    dataContract:
+      schema:
+        - name: CD_FISCALE_PIVA
+          description: Codice fiscale o partita IVA
+    specific:
+      gitlabProject: example-workloads/example-project/example-dp/snowflake-outputport
+      gitlabRef: main
+      company: Example Organization
+      region: euc1
+      gdl: dt2
+      secretName: /example-datap/dev/dt2/databr-wks-deployer
+      systemName: EXAMPLE_IDENTIFIER
+      databaseName: EXAMPLE_IDENTIFIER
+      schemaName: example_schema
+      catalogName: EXAMPLE_IDENTIFIER
+      resourceName: example_output_port
+      liquibaseGitlabFolder: example_output_port/changelogs
+      entityType: Iceberg Table
+      entityName: example_entity
+      feedingFrequency: Giornaliero
+      feedingType: PUSHX
+      loadingMode: Full

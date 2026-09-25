@@ -1,0 +1,44 @@
+id: urn:example:dp:unsupported:1
+name: Unsupported Technology Product
+description: Example product using an unconfigured technology
+version: 1.0.0
+environment: development
+kind: dataproduct
+dataProductOwnerDisplayName: Example Owner
+status: Draft
+specific:
+  publishToInformatica: true
+  company: Example Organization
+  businessDomain: Customer Analytics
+  businessSubdomain: Data Products
+  technicalOwners: Example Data Team
+  dataProductType: Source-aligned
+  lifeCycleStatus: Active
+  sensitiveInfo: No
+  confidentiality: Private
+  memorizationType: Si
+  creationDate: 2026-01-01
+components:
+  - kind: outputport
+    id: urn:example:component:unsupported:1
+    name: Unsupported Output Port
+    description: Output port intentionally using an unconfigured technology
+    version: 1.0.0
+    technology: unsupported-technology
+    outputPortType: table
+    dataContract:
+      schema:
+        - name: record_id
+          description: Stable record identifier
+          dataType: TEXT
+    specific:
+      systemName: Example Data System
+      serverName: example-server.example.com
+      databaseName: example_analytics
+      schemaName: curated
+      entityName: unsupported_records
+      entityType: Table
+      creationDate: 2026-01-01
+      feedingFrequency: Daily
+      isPii: false
+      sensitiveData: false

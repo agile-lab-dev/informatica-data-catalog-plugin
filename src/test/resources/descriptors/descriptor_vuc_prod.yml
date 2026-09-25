@@ -1,0 +1,48 @@
+id: urn:example:dp:customer-analytics:1
+name: Customer Analytics Product
+description: Example customer analytics product
+version: 1.0.0
+environment: production
+kind: dataproduct
+dataProductOwnerDisplayName: Example Owner
+status: Published
+specific:
+  publishToInformatica: true
+  company: Example Organization
+  businessDomain: Customer Analytics
+  businessSubdomain: Data Products
+  technicalOwners: Example Data Team
+  dataProductType: Consumer-aligned
+  lifeCycleStatus: Active
+  sensitiveInfo: No
+  confidentiality: Private
+  memorizationType: Si
+  creationDate: 2026-01-01
+  releaseDate: 2026-01-15
+  customAttributes:
+    Business Owner: Example Owner
+components:
+  - kind: outputport
+    id: urn:example:component:customer-analytics:orders
+    name: Orders Output Port
+    description: Orders dataset for analytics
+    version: 1.0.0
+    technology: Snowflake
+    outputPortType: table
+    dataContract:
+      schema:
+        - name: order_id
+          description: Stable order identifier
+          dataType: TEXT
+    specific:
+      systemName: Example Data System
+      serverName: example-snowflake.example.com
+      databaseName: example_analytics
+      schemaName: curated
+      entityName: orders
+      entityType: Table
+      creationDate: 2026-01-01
+      isPii: false
+      sensitiveData: false
+      feedingFrequency: Daily
+      loadingMode: Full

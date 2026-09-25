@@ -1,0 +1,11 @@
+id: urn:dmb:dp:test:skip-when-publish-disabled:0
+name: Skip When Publish Disabled
+environment: test
+kind: dataproduct
+# Minimal descriptor with publishing disabled. referenceContext (domain/subdomain)
+# is intentionally missing: if validate() did NOT honor the publish flag, the
+# DataContract validataon would fail on the mandatory fields. Since publishing is
+# disabled, validate() must short-circuit to valid=true without validatang.
+specific:
+  publishToInformatica: false
+components: []

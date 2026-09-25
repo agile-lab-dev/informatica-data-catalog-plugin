@@ -1,0 +1,88 @@
+id: urn:example:dp:analytics:1
+name: Example Analytics Product
+description: Example product for customer analytics
+version: 1.0.0
+environment: development
+kind: dataproduct
+dataProductOwnerDisplayName: Example Owner
+status: Draft
+specific:
+  publishToInformatica: true
+  company: Example Organization
+  businessDomain: Customer Analytics
+  businessSubdomain: Data Products
+  technicalOwners: example-team
+  dataProductType: Source-aligned
+  lifeCycleStatus: Active
+  sensitiveInfo: No
+  confidentiality: Private
+  memorizationType: Si
+  creationDate: 2026-01-01
+  customAttributes:
+    Business Owner: Example Owner
+components:
+  - kind: outputport
+    id: urn:example:component:analytics:orders
+    name: Orders Output Port
+    description: Output port for the orders dataset
+    version: 1.0.0
+    technology: Snowflake
+    outputPortType: view
+    dataContract:
+      schema:
+        - name: order_id
+          description: Stable order identifier
+          dataType: TEXT
+          dataLength: 50
+        - name: order_date
+          description: Date when the order was created
+          dataType: DATE
+    specific:
+      systemName: Example Data System
+      serverName: example-snowflake.example.com
+      databaseName: example_analytics
+      schemaName: curated
+      entityName: orders
+      entityType: View
+      creationDate: 2026-01-01
+      feedingFrequency: Giornaliero
+      feedingType: PUSH
+      loadingMode: Full
+      historicized: true
+      sensitiveData: false
+      retentionInfo: 5 years
+      sla:
+        refreshRate: Giornaliero
+        retentionRate: "Availability: 99.9%"
+      isPii: false
+      modificationDate: 2026-01-15
+      qualityExpectations: Completeness above 99%
+      securityConsiderations: TLS 1.3 and group-based access
+      technicalSpecifications: JDBC connection with view-based access
+  - kind: outputport
+    id: urn:example:component:analytics:customers
+    name: Customers Output Port
+    description: Output port for the customers dataset
+    version: 1.0.0
+    technology: Snowflake
+    outputPortType: view
+    dataContract:
+      schema:
+        - name: customer_id
+          description: Stable customer identifier
+          dataType: TEXT
+          dataLength: 50
+    specific:
+      systemName: Example Data System
+      serverName: example-snowflake.example.com
+      databaseName: example_analytics
+      schemaName: curated
+      entityName: customers
+      entityType: View
+      creationDate: 2026-01-01
+      feedingFrequency: Giornaliero
+      feedingType: PUSH
+      loadingMode: Full
+      historicized: true
+      sensitiveData: false
+      isPii: false

@@ -1,0 +1,45 @@
+id: urn:example:dp:catalog:1
+name: Example Catalog Product
+description: Example product for catalog validation
+version: 1.0.0
+environment: development
+kind: dataproduct
+dataProductOwnerDisplayName: Example Owner
+status: Draft
+specific:
+  publishToInformatica: true
+  company: Example Organization
+  businessDomain: Customer Analytics
+  businessSubdomain: Data Products
+  technicalOwners: Example Data Team
+  dataProductType: Source-aligned
+  lifeCycleStatus: Active
+  sensitiveInfo: No
+  confidentiality: Private
+  memorizationType: Si
+  creationDate: 2026-01-01
+components:
+  - kind: outputport
+    id: urn:example:component:catalog:orders
+    name: Orders Output Port
+    description: Example orders dataset
+    version: 1.0.0
+    technology: Snowflake
+    outputPortType: table
+    dataContract:
+      schema:
+        - name: order_id
+          description: Stable order identifier
+          dataType: TEXT
+    specific:
+      systemName: Example Data System
+      serverName: example-snowflake.example.com
+      databaseName: example_analytics
+      schemaName: curated
+      entityName: orders
+      entityType: Table
+      creationDate: 2026-01-01
+      isPii: false
+      sensitiveData: false
+      feedingFrequency: Daily
+      loadingMode: Full

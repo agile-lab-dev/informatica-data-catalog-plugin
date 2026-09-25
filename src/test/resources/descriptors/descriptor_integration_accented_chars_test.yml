@@ -1,0 +1,185 @@
+dataProductOwnerDisplayName: Example Owner
+projectOwner: user:example.owner@example.com
+projectOwnerDisplayName: Example Owner
+environment: dev
+domain: customer-analytics
+projectKind: system
+kind: dataproduct
+domainId: urn:dmb:dmn:customer-analytics
+id: urn:dmb:dp:customer-analytics:data-product-test-metadata-3:0
+description: Data Product
+devGroup: EXAMPLE_DATA_TEAM
+ownerGroup: example.owner@example.com
+name: Data Product Test Cafe Plus Why
+fullyQualifiedName: null
+version: 1.0.0
+useCaseTemplateId: urn:dmb:utm:data-product-template:0.0.0
+infrastructureTemplateId: urn:dmb:itm:dataproduct-provisioner:0
+dataProductOwner: user:example.owner@example.com
+email: example.owner@example.com
+informationSLA: Information SLA
+status: Draft
+maturity: Initial
+company: Example Organization
+gdl: fnd
+billing: {}
+tags: []
+specific:
+  #IDENTIFICATIVO UNIVOCO - ???
+  #NOME - name
+  publishToInformatica: true
+  purpose: ""
+  dataProductType: Consumer-aligned
+
+  gdl: fnd
+  businessDomain: General
+  businessSubdomain: Generale
+  #PRODUCT OWNER - projectOwner
+
+
+  technicalOwners: example.owner
+  contacts: example.owner
+  lifeCycleStatus: Draft
+  linkDocumentation: http:/test.link
+  linkObservabilityPort: http:/test.observability.link
+  linkDataQualityPort: http://test.dq.link
+  metadataDetails: Other metadata details
+  sensitiveInfo: Yes
+  norms: N/A
+  certifiedUse: Generic
+  termsOfUse: N/A
+  confidentiality: Public
+  outsourcer: testoutsourcer
+  defaultDelivery: testdelivery
+  creationDate: 2026-01-26T15:44:54.193Z
+  releaseDate: 2026-01-27
+  endDate: 2026-01-31
+  suspensionDate: 2026-01-30
+  informationSLA: Information SLA
+  quality: Gold
+  groupUrl: https://git.example.com/?owner=example-workloads/example-foundation%2Fcustomer-analytics-product
+  gitlabGroup: example-workloads/example-foundation/customer-analytics-product
+  memorizationType: In identification
+shoppable: false
+taxonomy:
+  id: urn:dmb:taxonomy:data-mesh-taxonomy
+  name: data-mesh-taxonomy
+components:
+  - kind: outputport
+    id: urn:dmb:cmp:customer-analytics:data-product-test-metadata-3:0:myfirstouputport
+    description: MyFirstOuputPort
+    name: MyFirstOuputPort
+    version: 0.0.0
+    infrastructureTemplateId: urn:dmb:itm:liquibase-provisioner:0
+    useCaseTemplateId: urn:dmb:utm:databricks-output-port-template:0.0.0
+    dependsOn:
+      - urn:dmb:cmp:customer-analytics:data-product-test-metadata-3:0:myfirststoragearea
+    platform: snowflake on AWS
+    technology: snowflake
+    outputPortType: view
+    connectionType: DATAPIPELINE
+    tags: []
+    readsFrom: []
+    dataSharingAgreement:
+      purpose: Generic Purpose
+      billing: TestBilling
+      security: TestSecurity
+      intendedUsage: TestUsage
+      audience: TestAudience
+      limitations: TestLimitation
+      lifeCycle: TestLifeCycle
+      confidentiality: TestConfidentiality
+    dataContract:
+      schema:
+        - name: ID
+          description: ID
+          dataType: TEXT
+          dataLength: 16777216
+          tags:
+            - tagFQN: Identifier
+              source: Glossary
+              labelType: Manual
+              state: Confirmed
+        - name: NAME
+          description: NAME
+          dataType: TEXT
+          dataLength: 16777216
+          tags:
+            - tagFQN: Dimension
+              source: Glossary
+              labelType: Manual
+              state: Confirmed
+    semanticLinking: []
+    creationDate: 2026-01-26T15:44:54.193Z
+    specific:
+      sensitiveInfo: Yes
+      gitlabProject: example-workloads/example-foundation/customer-analytics-product/snowflake-outputport
+      gitlabRef: main
+      company: Example Organization
+      region: eu-central-1
+      gdl: fnd
+      secretName: /example-datap/dev/fnd/databr-wks-deployer
+      liquibaseGitlabFolder: MyFirstOuputPort/changelogs
+      catalogName: example_catalog
+      schemaName: example_schema
+      resourceName: myfirstouputport
+      systemName: TestSystemName
+      serverName: TestServerName
+      databaseName: example_database
+      entityType: TestEntityName
+      entityName: EXAMPLE_CUSTOMER_ENTITY
+      feedingFrequency: Giornaliero
+      feedingType: PULL
+      loadingMode: Full
+      manualProcess: true
+      historicized: true
+      retentionInfo: TestRetentionInfo
+      sensitiveData: true
+      refreshRate: TestRefreshRate
+      retentionRate: TestRetentionRate
+      managedData: TestManagedData
+
+      semanticLinks: TestSemanticLinks
+      adGroupName: TestADGroupName
+      isPii: true
+      modificationDate: 2026-01-27
+      suspensionDate: 2026-01-28
+      deprecationDate: 2026-01-31
+      qualityExpectations: TestQualityExpectation
+      securityConsiderations: TestSecurityConsiderations
+      technicalSpecifications: TestTechnicalSpecifications
+      assetVersion: ""
+      assetDataCategory: null
+      assetTipologiaContribuzione: null
+    consumable: true
+    shoppable: true
+  - kind: storage
+    id: urn:dmb:cmp:customer-analytics:data-product-test-metadata-3:0:myfirststoragearea
+    description: Data Product
+    name: MyFirstStorageArea
+    version: 0.0.0
+    infrastructureTemplateId: urn:dmb:itm:liquibase-provisioner:0
+    useCaseTemplateId: urn:dmb:utm:databricks-storage-template:0.0.0
+    dependsOn: []
+    platform: snowflake on AWS
+    technology: snowflake
+    storageType: table
+    connectionType: DATAPIPELINE
+    tags: []
+    readsFrom: []
+    specific:
+      gitlabProject: example-workloads/example-foundation/customer-analytics-product/snowflake-storage
+      gitlabRef: main
+      company: Example Organization
+      region: eu-central-1
+      gdl: fnd
+      secretName: /example-datap/dev/fnd/databr-wks-deployer
+      liquibaseGitlabFolder: MyFirstStorageArea/changelogs
+      catalogName: example_catalog
+      schemaName: prova2
+      resourceName: myfirststoragearea
+      columns:
+        - ID
+        - NAME
+    consumable: false
+    shoppable: false

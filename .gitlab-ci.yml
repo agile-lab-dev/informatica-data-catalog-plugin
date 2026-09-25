@@ -1,0 +1,38 @@
+image: maven:3.9.16-eclipse-temurin-17
+
+stages:
+  - check
+  - test
+  - build
+
+variables:
+  MAVEN_OPTS: "-Dmaven.repo.local=$CI_PROJECT_DIR/.m2/repository"
+  MAVEN_CLI_OPTS: "--batch-mode --errors --fail-at-end --show-version"
+
+cache:
+  key: maven-${CI_COMMIT_REF_SLUG}
+  paths:
+    - .m2/repository
+
+check:
+  stage: check
+  script:
+    - mvn $MAVEN_CLI_OPTS spotless:check
+
+test:
+  stage: test
+  script:
+    - mvn $MAVEN_CLI_OPTS test
+  artifacts:
+    when: always
+    reports:
+      junit:
+        - target/surefire-reports/*.xml
+
+build:
+  stage: build
+  script:
+    - mvn $MAVEN_CLI_OPTS package -DskipTests
+  artifacts:
+    paths:
+      - target/*.jar

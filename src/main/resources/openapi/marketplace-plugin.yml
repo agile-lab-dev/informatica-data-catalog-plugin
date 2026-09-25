@@ -1,0 +1,253 @@
+openapi: 3.0.3
+info:
+  title: Marketplace Plugin API
+  description: |
+    <a href="/openapi/marketplaceplugin/interface-specification.yml" target="_blank" download="marketplace-plugin-openapi.yaml"><button>Download OpenAPI Specification</button></a>
+
+    A **Marketplace Plugin** is the component responsible to publish resources into the Witboost Marketplace or third-party marketplaces.
+
+    It is also responsible to mantain alignment between the Access Control List on the infrastructural component and on the UI.
+  version: '0.1.0'
+servers:
+  - url: /marketplace-plugin
+tags:
+  - name: MarketplaceProxy
+    description: A proxy towards a market place service
+    externalDocs:
+      description: Find out more
+      url: http://swagger.io
+paths:
+  /v1/insert-provisioning-results:
+    post:
+      tags:
+        - MarketplaceProxy
+      summary: Publish a resource into the Marketplace
+      description: Insert the latest provisioning result and descriptor into the target marketplace registry.
+      operationId: insertProvisioningResults
+      requestBody:
+        description: An asset descriptor and the provisioning results wrapped as simple object
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProvisioningResultRequest'
+        required: true
+      responses:
+        200:
+          description: If successful returns the ProvisioningResultResponse object
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProvisioningResultResponse'
+        400:
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+        500:
+          description: System problem
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemError'
+  /v1/delete:
+    post:
+      tags:
+        - MarketplaceProxy
+      summary: Remove a resource from the Marketplace
+      description: Perform a delete operation of asset descriptor references that are in the Marketplace DB
+      operationId: delete
+      requestBody:
+        description: An asset descriptor and the provisioning results wrapped as simple object
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProvisioningResultRequest'
+        required: true
+      responses:
+        200:
+          description: It successfully returns a string if the delete operation occurred, or if it is skipped due to missing asset
+          content:
+            application/json:
+              schema:
+                type: string
+        400:
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+        500:
+          description: System problem
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemError'
+  /v1/update-acl:
+    patch:
+      tags:
+        - MarketplaceProxy
+      summary: Sync the Access Control List
+      description: Update the Access Control List table copy that is kept in the Marketplace.
+      operationId: updateAcl
+      requestBody:
+        description: The request used to update the ACL table.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateAclRequest'
+        required: true
+      responses:
+        204:
+          description: If successful returns an OK
+          content:
+            application/json:
+              schema:
+                type: string
+        400:
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+        500:
+          description: System problem
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemError'
+
+  /v1/validate:
+    post:
+      tags:
+        - MarketplaceProxy
+      summary: Validate a descriptor (intended for use as a Witboost remote policy)
+      description: Validates the descriptor for Marketplace publishing (e.g. that the target category exists).
+      operationId: validate
+      requestBody:
+        description: Details of a provisioning request to be validated
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProvisioningRequest'
+        required: true
+      responses:
+        200:
+          description: It synchronously returns the validation result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationResult'
+        500:
+          description: System problem
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemError'
+components:
+  schemas:
+    DescriptorKind:
+      type: string
+      enum: [ DATAPRODUCT_DESCRIPTOR, DATAPRODUCT_DESCRIPTOR_WITH_RESULTS ]
+    ProvisioningRequest:
+      required:
+        - descriptorKind
+        - descriptor
+      type: object
+      properties:
+        descriptorKind:
+          $ref: '#/components/schemas/DescriptorKind'
+        descriptor:
+          type: string
+          description: A provisioning request in yaml format
+    ValidationResult:
+      description: Result of a validation operation on a provided descriptor
+      required:
+        - valid
+      type: object
+      properties:
+        valid:
+          description: Whether the provided descriptor is valid or not
+          type: boolean
+        error:
+          $ref: '#/components/schemas/ValidationError'
+    ProvisioningResultResponse:
+      required:
+        - status
+      type: object
+      properties:
+        status:
+          type: string
+          description: the response status
+        result:
+          type: string
+          description: human-readable details about the outcome (e.g. error message when status is FAILED)
+        info:
+          type: object
+          properties:
+            privateInfo:
+              type: object
+              additionalProperties: true
+              properties:
+                marketplaceInfo:
+                  description: private info about the marketplace
+                  type: object
+                  properties:
+                    type:
+                      type: string
+                    label:
+                      type: string
+                      description: What to display as header in the UI
+                    value:
+                      type: string
+                      description: What to display as value in the UI
+                    href:
+                      type: string
+                      description: What to display as link in the UI
+    UpdateAclRequest:
+      required:
+        - requestId
+        - outputPortId
+        - refs
+      type: object
+      properties:
+        requestId:
+          type: string
+        outputPortId:
+          type: integer
+        refs:
+          type: array
+          items:
+            type: string
+    ProvisioningResultRequest:
+      required:
+        - descriptor
+      type: object
+      properties:
+        descriptor:
+          type: string
+          description: Asset descriptor in yaml format
+    PublishRequest:
+      required:
+        - descriptor
+      type: object
+      properties:
+        descriptor:
+          type: string
+          description: Asset descriptor in yaml format
+    ValidationError:
+      required:
+        - errors
+      type: object
+      properties:
+        errors:
+          type: array
+          items:
+            type: string
+    SystemError:
+      required:
+        - error
+      type: object
+      properties:
+        error:
+          type: string

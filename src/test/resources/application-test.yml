@@ -1,0 +1,79 @@
+spring:
+  application:
+    name: informatica-plugin-test
+
+# Test configuration matching the application configuration structure
+# Can be overridden with environment variables
+# Example: export INFORMATICA_DCMP_USERNAME="mock-user"
+
+# Informatica Common API Configuration
+# Matches InformaticaApiConfig class structure
+# Provides common authentication details for login and JWT token endpoints
+# Values can be overridden with environment variables:
+# - INFORMATICA_BASE_URL
+# - INFORMATICA_DCMP_USERNAME
+# - INFORMATICA_DCMP_PASSWORD
+informatica:
+  publish_allowed_environment: ${INFORMATICA_PUBLISH_ALLOWED_ENV:}
+  api:
+    base-url: ${INFORMATICA_BASE_URL:http://localhost:18080}
+    login: /ma/api/v2/user/login
+    token: /identity-service/api/v1/jwt/Token?client_id=idmc_api&nonce=1234
+    username: ${INFORMATICA_DCMP_USERNAME:}
+    password: ${INFORMATICA_DCMP_PASSWORD:}
+
+  # Informatica Data Marketplace API Configuration
+  # Matches MarketplaceApiConfig class structure
+  # Values can be overridden with environment variables:
+  # - INFORMATICA_MP_BASE_URL
+  # - INFORMATICA_WRAPPER_MP_BASE_URL
+  marketplace:
+    mapping:
+      categories:
+        - descriptor-path: company
+        - descriptor-path: businessDomain
+        - descriptor-path: businessSubdomain
+      custom-attributes: {}
+    api:
+      base-url: ${INFORMATICA_MP_BASE_URL:http://localhost:18081/marketplace}
+      wrapper-base-url: ${INFORMATICA_MP_WRAPPER_BASE_URL:http://localhost:18082}
+      endpoints:
+        data-collections: /api/v2/data-collections
+        custom-attributes: /api/v1/integration/model/customAttributes
+        categories: /api/v2/categories
+        delivery-targets: /api/v2/delivery-targets
+        delivery-templates: /api/v1/integration/provisioning/deliveryTemplates
+        data-assets: /api/v1/integration/dataAssets
+        create-data-assets: /active-bpel/rt/Marketplace_Create_DataAssets
+        update-data-assets: /active-bpel/rt/Marketplace_Update_DataAssets
+        delete-data-assets: /active-bpel/rt/Marketplace_Delete_DataAssets
+
+  # Informatica Data Catalog API Configuration
+  # Matches DataCatalogApiConfig class structure
+  # Values can be overridden with environment variables:
+  # - INFORMATICA_DC_BASE_URL
+  data-catalog:
+    api:
+      base-url: ${INFORMATICA_DC_BASE_URL:http://localhost:18083}
+      settings:
+        polling-interval-millis: 30000
+        polling-timeout-millis: 600000
+        access-token-expire-seconds: 1500
+      endpoints:
+        asset-manage: /data360/content/v1/assets
+        asset-list: /data360/search/v1/assets
+        asset-import: /data360/content/import/v1/assets
+        jobs: /data360/observable/v1/jobs
+        exec-catalog-source-job: /data360/executable/v1/catalogsource
+    catalog-source:
+      enable-metadata-sync: ${INFORMATICA_DC_ENABLE_METADATA_SYNC:true}
+      sources:
+        example-technology: ${INFORMATICA_DC_EXAMPLE_TECHNOLOGY_CATALOG_SRC:}
+        snowflake: ${INFORMATICA_DC_SNOWFLAKE_CATALOG_SRC:test-catalog-source}
+    ui:
+      base-url: ${INFORMATICA_DC_UI_BASE_URL:http://localhost:18084}
+
+logging:
+  level:
+    com.witboost: DEBUG
+    org.springframework.web.filter.CommonsRequestLoggingFilter: WARN

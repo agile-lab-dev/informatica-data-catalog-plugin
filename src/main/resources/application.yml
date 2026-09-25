@@ -1,0 +1,91 @@
+spring:
+  application:
+    name: informatica-plugin
+
+server:
+  port: ${SERVER_PORT:8888}
+
+# Informatica Common API Configuration
+# Matches InformaticaApiConfig class structure
+# Provides common authentication details for login and JWT token endpoints
+# Values can be overridden with environment variables:
+# - INFORMATICA_BASE_URL
+# - INFORMATICA_DCMP_USERNAME
+# - INFORMATICA_DCMP_PASSWORD
+informatica:
+  publish_allowed_environment: ${INFORMATICA_PUBLISH_ALLOWED_ENV:}
+  api:
+    base-url: ${INFORMATICA_BASE_URL:https://dm-em.informaticacloud.com}
+    login: /ma/api/v2/user/login
+    token: /identity-service/api/v1/jwt/Token?client_id=idmc_api&nonce=1234
+    username: ${INFORMATICA_DCMP_USERNAME:}
+    password: ${INFORMATICA_DCMP_PASSWORD:}
+
+  # Informatica Data Marketplace API Configuration
+  # Matches MarketplaceApiConfig class structure
+  # Values can be overridden with environment variables:
+  # - INFORMATICA_MP_BASE_URL
+  # - INFORMATICA_WRAPPER_MP_BASE_URL
+  marketplace:
+    # Verify the Marketplace category (company/domain/subdomain) exists in Informatica during validate
+    category-validation-enabled: ${INFORMATICA_MP_CATEGORY_VALIDATION_ENABLED:true}
+    mapping:
+      categories:
+        - descriptor-path: company
+        - descriptor-path: businessDomain
+        - descriptor-path: businessSubdomain
+      custom-attributes: {}
+    api:
+      base-url: ${INFORMATICA_MP_BASE_URL:https://idmc-api.dm-em.informaticacloud.com/data360/marketplace}
+      wrapper-base-url: ${INFORMATICA_MP_WRAPPER_BASE_URL:https://emw1-cai.dm-em.informaticacloud.com}
+      endpoints:
+        data-collections: /api/v2/data-collections
+        custom-attributes: /api/v1/integration/model/customAttributes
+        categories: /api/v2/categories
+        delivery-targets: /api/v2/delivery-targets
+        delivery-templates: /api/v1/integration/provisioning/deliveryTemplates
+        data-assets: /api/v1/integration/dataAssets
+        create-data-assets: /active-bpel/rt/Marketplace_Create_DataAssets
+        update-data-assets: /active-bpel/rt/Marketplace_Update_DataAssets
+        delete-data-assets: /active-bpel/rt/Marketplace_Delete_DataAssets
+
+  # Informatica Data Catalog API Configuration
+  # Matches DataCatalogApiConfig class structure
+  # Values can be overridden with environment variables:
+  # - INFORMATICA_DC_BASE_URL
+  data-catalog:
+    api:
+      base-url: ${INFORMATICA_DC_BASE_URL:https://idmc-api.dm-em.informaticacloud.com}
+      settings:
+        polling-interval-millis: 30000
+        polling-timeout-millis: 600000
+        access-token-expire-seconds: 1500
+      endpoints:
+        asset-manage: /data360/content/v1/assets
+        asset-list: /data360/search/v1/assets
+        asset-import: /data360/content/import/v1/assets
+        jobs: /data360/observable/v1/jobs
+        exec-catalog-source-job: /data360/executable/v1/catalogsource
+    catalog-source:
+      enable-metadata-sync: ${INFORMATICA_DC_ENABLE_METADATA_SYNC:true}
+      # Configure catalog sources by technology. No vendor or tenant identifier is assumed.
+      sources:
+        example-technology: ${INFORMATICA_DC_EXAMPLE_TECHNOLOGY_CATALOG_SRC:}
+    # Validation depth. Cumulative levels: OFF < LOW < MID < HIGH.
+    #   OFF  - parse only
+    #   LOW  - structural/parameter validation (offline)
+    #   MID  - LOW + catalog source and table existence in Informatica
+    #   HIGH - MID + descriptor-vs-catalog column match (also makes the column import fatal)
+    # Resolution order (most specific wins): descriptor specific.validationLevel -> by-environment -> level (global default).
+    validation-level:
+      level: ${INFORMATICA_DC_VALIDATION_LEVEL:LOW}
+      by-environment: {}
+        # development: LOW
+        # production: HIGH
+    ui:
+      base-url: ${INFORMATICA_DC_UI_BASE_URL:https://cdgc.dm-em.informaticacloud.com}
+
+logging:
+  level:
+    org.springframework.web.filter.CommonsRequestLoggingFilter: WARN
+  config: classpath:logback-spring.xml

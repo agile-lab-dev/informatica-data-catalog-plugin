@@ -1,93 +1,198 @@
-# Informatica Data Catalog Plugin 
+# Witboost Informatica Plugin
 
+This project is a Java 17 Spring Boot adapter that publishes a Witboost Data Product Descriptor to Informatica Data Catalog and Data Marketplace.
 
+## Overview
 
-## Getting started
+The adapter exposes the Catalog and Marketplace contracts in `src/main/resources/openapi/` and maps one descriptor to both Informatica products:
 
-To make it easy for you to get started with GitLab, here's a list of recommended next steps.
+| Witboost object | Data Catalog | Data Marketplace |
+| --- | --- | --- |
+| Data product | Top-level system | Collection |
+| Output port | System and data set hierarchy | Delivery target and data asset |
+| Data contract | Workbook metadata | Data asset metadata and custom attributes |
 
-Already a pro? Just edit this README.md and make it your own. Want to make it easy? [Use the template at the bottom](#editing-this-readme)!
+The provisioning workflow is opinionated, while ordinary mapping differences are configured with YAML. Advanced naming, value transformation, catalog source resolution, and workbook mapping can be replaced with Spring beans.
 
-## Add your files
+## Requirements
 
-* [Create](https://docs.gitlab.com/user/project/repository/web_editor/#create-a-file) or [upload](https://docs.gitlab.com/user/project/repository/web_editor/#upload-a-file) files
-* [Add files using the command line](https://docs.gitlab.com/topics/git/add_files/#add-files-to-a-git-repository) or push an existing Git repository with the following command:
+- Java 17
+- Maven 3.9 or newer
+- An Informatica tenant for live provisioning tests
 
+The repository includes `.java-version` for `jenv` users:
+
+```bash
+jenv local 17
+export JAVA_HOME=$(/usr/libexec/java_home -v 17)
 ```
-cd existing_repo
-git remote add origin https://gitlab.com/AgileFactory/Witboost.Mesh/Provisioning/witboost.mesh.provisioning.datacatalogplugin/witboost.oss.data-catalog-plugin.informatica.git
-git branch -M master
-git push -uf origin master
+
+## Building
+
+Run formatting checks, tests, and packaging with:
+
+```bash
+mvn verify
 ```
 
-## Integrate with your tools
+Format Java and resource files locally with:
 
-* [Set up project integrations](https://gitlab.com/AgileFactory/Witboost.Mesh/Provisioning/witboost.mesh.provisioning.datacatalogplugin/witboost.oss.data-catalog-plugin.informatica/-/settings/integrations)
+```bash
+mvn spotless:apply
+```
 
-## Collaborate with your team
+GitLab CI runs the same work in separate check, test, and build stages on Java 17. Surefire reports and the packaged JAR are retained as job artifacts.
 
-* [Invite team members and collaborators](https://docs.gitlab.com/user/project/members/)
-* [Create a new merge request](https://docs.gitlab.com/user/project/merge_requests/creating_merge_requests/)
-* [Automatically close issues from merge requests](https://docs.gitlab.com/user/project/issues/managing_issues/#closing-issues-automatically)
-* [Enable merge request approvals](https://docs.gitlab.com/user/project/merge_requests/approvals/)
-* [Set auto-merge](https://docs.gitlab.com/user/project/merge_requests/auto_merge/)
+## Configuration
 
-## Test and Deploy
+Runtime configuration is stored in `src/main/resources/application.yml`. Credentials and tenant-specific values must come from deployment secrets or environment variables; no tenant identifier or credential is provided by default.
 
-Use the built-in continuous integration in GitLab.
+The default profile supports API endpoints, authentication settings, publication flags, validation levels, technology-keyed Catalog sources, Marketplace categories, and custom attributes. Custom attribute IDs are resolved by name through the Informatica tenant API and are never hardcoded in application code.
 
-* [Get started with GitLab CI/CD](https://docs.gitlab.com/ci/quick_start/)
-* [Analyze your code for known vulnerabilities with Static Application Security Testing (SAST)](https://docs.gitlab.com/user/application_security/sast/)
-* [Deploy to Kubernetes, Amazon EC2, or Amazon ECS using Auto Deploy](https://docs.gitlab.com/topics/autodevops/requirements/)
-* [Use pull-based deployments for improved Kubernetes management](https://docs.gitlab.com/user/clusters/agent/)
-* [Set up protected environments](https://docs.gitlab.com/ci/environments/protected_environments/)
+Catalog sources are optional per technology. Metadata synchronization runs only for configured and enabled sources.
 
-***
+### Descriptor input
 
-# Editing this README
+The adapter receives the original Witboost Data Product Descriptor as YAML or JSON. It does not receive the internal Informatica model shown in the Java sources. The relevant shape is:
 
-When you're ready to make this README your own, just edit this file and use the handy template below (or feel free to structure it however you want - this is just a starting point!). Thanks to [makeareadme.com](https://www.makeareadme.com/) for this template.
+```yaml
+id: urn:example:data-product:orders:1
+name: Orders
+description: Curated order data for analytics
+version: 1.0.0
+environment: development
+kind: dataproduct
+dataProductOwnerDisplayName: Example Owner
+status: Draft
+specific:
+	publishToInformatica: true
+	company: Example Organization
+	businessDomain: Commercial
+	businessSubdomain: Orders
+	technicalOwners: example-team
+	dataProductType: Source-aligned
+	lifeCycleStatus: Draft
+	sensitiveInfo: No
+	confidentiality: Private
+	memorizationType: No
+	creationDate: 2026-01-01
+	customAttributes:
+		businessOwner: Example Owner
+		dataClassification: Internal
+components:
+	- id: urn:example:component:orders:1
+		kind: outputport
+		name: Orders API
+		description: Orders exposed for analytical consumption
+		version: 1.0.0
+		technology: example-technology
+		outputPortType: table
+		specific:
+			publishToInformatica: true
+			systemName: Orders System
+			serverName: example-server
+			databaseName: analytics
+			schemaName: curated
+			entityName: orders
+			entityType: table
+			isPii: false
+			creationDate: 2026-01-01
+		dataContract:
+			schema:
+				- name: order_id
+					description: Stable order identifier
+					dataType: string
+				- name: order_date
+					description: Order creation date
+					dataType: date
+```
 
-## Suggestions for a good README
+The root `specific.publishToInformatica` flag is required and must be `true` for publication. If it is missing or `false`, the product is skipped. An optional component-level `specific.publishToInformatica: false` excludes only that output port. The environment can also be restricted with `INFORMATICA_PUBLISH_ALLOWED_ENV`.
 
-Every project is different, so consider which of these sections apply to yours. The sections used in the template are suggestions for most open source projects. Also keep in mind that while a README can be too long and detailed, too long is better than too short. If you think your README is too long, consider utilizing another form of documentation rather than cutting out information.
+The adapter uses these descriptor fields:
 
-## Name
-Choose a self-explaining name for your project.
+| Descriptor path | Purpose |
+| --- | --- |
+| `id`, `name`, `description`, `version` | Data product identity and Catalog/Marketplace names |
+| `specific.company` | Root Marketplace category |
+| `specific.businessDomain` | Second Marketplace category |
+| `specific.businessSubdomain` | Third Marketplace category |
+| `specific.customAttributes` | Generic values mapped to Marketplace custom attributes |
+| `components[]` | Candidate output ports and data assets |
+| `components[].technology` | Catalog source key and Marketplace delivery template key |
+| `components[].specific.systemName`, `databaseName`, `schemaName`, `entityName` | Technical Catalog location |
+| `components[].specific.dataContract.schema` | Dataset columns and data contract metadata |
 
-## Description
-Let people know what your project can do specifically. Provide context and add a link to any reference visitors might be unfamiliar with. A list of Features or a Background subsection can also be added here. If there are alternatives to your project, this is a good place to list differentiating factors.
+Storage components can remain in the descriptor, but only output-port and data-asset components are published by this adapter.
 
-## Badges
-On some READMEs, you may see small images that convey metadata, such as whether or not all the tests are passing for the project. You can use Shields to add some to your README. Many services also have instructions for adding a badge.
+### Customizing `application.yml`
 
-## Visuals
-Depending on what you are making, it can be a good idea to include screenshots or even a video (you'll frequently see GIFs rather than actual videos). Tools like ttygif can help, but check out Asciinema for a more sophisticated method.
+Start from `src/main/resources/application.yml` and override values through a profile or environment variables. Keep credentials outside the file:
 
-## Installation
-Within a particular ecosystem, there may be a common way of installing things, such as using Yarn, NuGet, or Homebrew. However, consider the possibility that whoever is reading your README is a novice and would like more guidance. Listing specific steps helps remove ambiguity and gets people to using your project as quickly as possible. If it only runs in a specific context like a particular programming language version or operating system or has dependencies that have to be installed manually, also add a Requirements subsection.
+```yaml
+informatica:
+	api:
+		base-url: https://example-idmc.example.com
+		username: ${INFORMATICA_DCMP_USERNAME}
+		password: ${INFORMATICA_DCMP_PASSWORD}
+	marketplace:
+		category-validation-enabled: true
+		mapping:
+			categories:
+				- descriptor-path: company
+				- descriptor-path: businessDomain
+				- descriptor-path: businessSubdomain
+			custom-attributes:
+				Business Owner:
+					descriptor-path: businessOwner
+					required: true
+				Classification:
+					descriptor-path: dataClassification
+					default-value: Internal
+					transformer: identity
+	data-catalog:
+		catalog-source:
+			enable-metadata-sync: true
+			sources:
+				example-technology: EXAMPLE_CATALOG_SOURCE
+				another-technology: ANOTHER_CATALOG_SOURCE
+		validation-level:
+			level: LOW
+			by-environment:
+				development: LOW
+				production: HIGH
+```
 
-## Usage
-Use examples liberally, and show the expected output if you can. It's helpful to have inline the smallest example of usage that you can demonstrate, while providing links to more sophisticated examples if they are too long to reasonably include in the README.
+`mapping.categories` defines the category hierarchy in order. Each `descriptor-path` is relative to `specific`; the configured levels must exist in the descriptor and in Informatica. `mapping.custom-attributes` maps an Informatica attribute name to a descriptor path. Attribute IDs are looked up at runtime by name, so they are not copied into YAML. `required`, `default-value`, and `transformer` control validation and conversion. The built-in transformer is `identity`; custom transformers are Spring beans implementing `DescriptorValueTransformer`.
 
-## Support
-Tell people where they can go to for help. It can be any combination of an issue tracker, a chat room, an email address, etc.
+`data-catalog.catalog-source.sources` is a map keyed by the exact lower-case output-port technology. A missing source causes validation to fail for that output port. Set `enable-metadata-sync` to `false` when source synchronization is not part of the deployment.
 
-## Roadmap
-If you have ideas for releases in the future, it is a good idea to list them in the README.
+Useful environment overrides include `INFORMATICA_BASE_URL`, `INFORMATICA_DCMP_USERNAME`, `INFORMATICA_DCMP_PASSWORD`, `INFORMATICA_MP_BASE_URL`, `INFORMATICA_DC_BASE_URL`, `INFORMATICA_DC_ENABLE_METADATA_SYNC`, `INFORMATICA_DC_VALIDATION_LEVEL`, and `INFORMATICA_PUBLISH_ALLOWED_ENV`.
 
-## Contributing
-State if you are open to contributions and what your requirements are for accepting them.
+## Publication controls
 
-For people who want to make changes to your project, it's helpful to have some documentation on how to get started. Perhaps there is a script that they should run or some environment variables that they need to set. Make these steps explicit. These instructions could also be useful to your future self.
+Set `specific.publishToInformatica: false` to disable publication for a data product. An output port can set the same flag to exclude only that output port. The output-port default is publication.
 
-You can also document commands to lint the code or run tests. These steps help to ensure high code quality and reduce the likelihood that the changes inadvertently break something. Having instructions for running tests is especially helpful if it requires external setup, such as starting a Selenium server for testing in a browser.
+## Running locally
 
-## Authors and acknowledgment
-Show your appreciation to those who have contributed to the project.
+Provide credentials and API settings through environment variables, then start the application:
+
+```bash
+mvn spring-boot:run
+```
+
+Unit and deterministic tests do not require external services. Live integration tests are opt-in and require a separately configured Informatica tenant.
+
+## Security and data handling
+
+Do not commit credentials, tenant IDs, private URLs, or production descriptors. Treat credentials previously committed to repository history as compromised, rotate them, and scan the complete publication history before release.
+
+Vendor API reference material is not part of the OSS distribution unless its redistribution license has been verified. Use the official Informatica documentation for current API details.
 
 ## License
-For open source projects, say how it is licensed.
 
-## Project status
-If you have run out of energy or time for your project, put a note at the top of the README saying that development has slowed down or stopped completely. Someone may choose to fork your project or volunteer to step in as a maintainer or owner, allowing your project to keep going. You can also make an explicit request for maintainers.
+This project is intended for release under the Apache License 2.0. Add the approved `LICENSE` file before publishing a release.
+
+## About Witboost
+
+[Witboost](https://www.witboost.com) is a data experience platform for productizing, governing, and discovering data products across technology platforms.

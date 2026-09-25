@@ -1,0 +1,63 @@
+# Descriptor CONFORMANT to all informatica_* policies.
+# Used by the green test PolicyCueValidataonTest#conformantDescriptorPassesAllPolicies.
+id: urn:dmb:dp:example-domain:example-dp:0
+name: Example Data Product
+description: Test data product compliant with the CUE policies
+dataProductOwnerDisplayName: Example Owner
+version: 1.0.0
+environment: prod
+kind: dataproduct
+specific:
+  publishToInformatica: true
+
+
+  technicalOwners: Datateam 2
+  defaultDelivery: Snowflake
+  company: Example Organization
+  businessDomain: Customer Analytics
+  businessSubdomain: Campaign Planning
+  creationDate: 2026-01-26T15:44:54.193Z
+  dataProductType: Consumer-aligned
+  lifeCycleStatus: Draft
+  sensitiveInfo: "Yes"
+  certifiedUse: Analysis
+  confidentiality: Reserved
+  memorizationType: "Si"
+components:
+  - kind: outputport
+    id: urn:dmb:cmp:example-domain:example-dp:0:example-output-port
+    name: Example Output Port
+    description: Test data product compliant with the CUE policies
+    version: 1.0.0
+    technology: snowflake
+    creationDate: "2026-01-26T15:44:54.193Z"
+    dataContract:
+      schema:
+        - name: CD_FISCALE_PIVA
+          description: Codice fiscale o partita IVA
+          dataType: TEXT
+        - name: QT_PRODOTTI_ATTIVI
+          description: Quantita prodotti attivi
+          dataType: NUMBER
+    specific:
+      gitlabProject: example-workloads/example-project/example-dp/snowflake-outputport
+      gitlabRef: main
+      company: Example Organization
+      region: euc1
+      gdl: dt2
+      secretName: /example-datap/dev/dt2/databr-wks-deployer
+      systemName: EXAMPLE_IDENTIFIER
+      serverName: https://app.snowflake.com/cpltzoy/ie62270
+      databaseName: EXAMPLE_IDENTIFIER
+      schemaName: example_schema
+      catalogName: EXAMPLE_IDENTIFIER
+      resourceName: example_output_port
+      liquibaseGitlabFolder: example_output_port/changelogs
+      entityType: Iceberg Table
+      entityName: example_entity
+      feedingFrequency: Giornaliero
+      feedingType: PULL
+      loadingMode: Full
+      isPii: true
+      sensitiveData: true
+      modificationDate: "2026-03-09T01:00:00.000Z"
