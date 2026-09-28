@@ -49,10 +49,6 @@ public class MarketplaceMappingProperties {
 
     public static class AttributeMapping {
         @NotBlank private String descriptorPath;
-
-        /** Technical Informatica custom-attribute ID; display names are not used as identifiers. */
-        private String informaticaId;
-
         private boolean required;
         private String defaultValue;
         private String transformer;
@@ -63,14 +59,6 @@ public class MarketplaceMappingProperties {
 
         public void setDescriptorPath(String descriptorPath) {
             this.descriptorPath = descriptorPath;
-        }
-
-        public String getInformaticaId() {
-            return informaticaId;
-        }
-
-        public void setInformaticaId(String informaticaId) {
-            this.informaticaId = informaticaId;
         }
 
         public boolean isRequired() {

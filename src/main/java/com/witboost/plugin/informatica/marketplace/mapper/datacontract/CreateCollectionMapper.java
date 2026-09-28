@@ -9,7 +9,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-import org.mapstruct.Context;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.Named;
@@ -33,8 +32,6 @@ public abstract class CreateCollectionMapper {
      * @param dataContract The source DataContract object (can be null, but if non-null, info must
      *     not be null)
      * @param categoryId The category ID to associate with the data collection
-     * @param customAttributesMap A map mapping custom attribute names (String) to their IDs
-     *     (String)
      * @return CreateDataCollectionRequest with mapped fields
      * @throws IllegalArgumentException if dataContract is non-null but dataContract.info is null
      */
@@ -47,18 +44,13 @@ public abstract class CreateCollectionMapper {
             source = "dataContract",
             qualifiedByName = "mapCustomAttributesToList")
     public abstract CreateDataCollectionRequest mapToCreateDataCollectionRequest(
-            DataContract dataContract,
-            String categoryId,
-            @Context Map<String, String> customAttributesMap);
+            DataContract dataContract, String categoryId);
 
     /**
      * Custom method to convert DataContract to CustomAttribute list. Uses context-passed
-     * customAttributesMap to resolve attribute IDs. Maps multiple fields from baseCharacteristics,
-     * additionalInformation, and referenceContext.
+        * ID-keyed custom attributes already extracted from the descriptor.
      *
      * @param dataContract The source DataContract object (must not have null info)
-     * @param customAttributesMap A map passed via @Context containing custom attribute name-to-ID
-     *     mappings
      * @return A list of mapped CustomAttribute objects
      * @throws IllegalArgumentException if dataContract.info is null or if required attribute
      *     mapping is missing
@@ -66,12 +58,12 @@ public abstract class CreateCollectionMapper {
     @Named("mapCustomAttributesToList")
     @SuppressWarnings("unused") // Used by MapStruct via @Named qualifier
     protected List<CreateDataCollectionRequest.CustomAttribute> mapCustomAttributesToList(
-            DataContract dataContract, @Context Map<String, String> customAttributesMap) {
+            DataContract dataContract) {
 
         Map<String, Object> customAttributeValues =
                 marketplaceAttributeMapper == null
-                        ? dataContract.getCustomAttributeValues(customAttributesMap)
-                        : marketplaceAttributeMapper.map(dataContract, customAttributesMap);
+                        ? dataContract.getCustomAttributes()
+                        : marketplaceAttributeMapper.map(dataContract);
         return customAttributeValues.entrySet().stream()
                 .map(
                         entry -> {

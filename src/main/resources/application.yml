@@ -14,24 +14,21 @@ server:
 # - INFORMATICA_DCMP_PASSWORD
 informatica:
   publish_allowed_environment: ${INFORMATICA_PUBLISH_ALLOWED_ENV:}
-  # Descriptor topology. Only the root publish flag is fixed by the plugin;
-  # all structural paths can be changed for a descriptor dialect.
+  # Descriptor paths are relative to the data product, output port, or subcomponent
+  # currently being processed. Children are always read from the local `components` field.
   descriptor:
     data-product:
-      children-path: components
       kind-path: kind
       id-path: id
       publish-path: specific.publishToInformatica
       shoppable-path: shoppable
     output-port:
-      children-path: components
       kind-path: kind
       kind-value: outputport
       id-path: id
       publish-path: specific.publishToInformatica
       shoppable-path: shoppable
     subcomponent:
-      children-path: components
       kind-path: kind
       kind-value: outputport
       id-path: id
@@ -57,16 +54,15 @@ informatica:
     category-validation-enabled: ${INFORMATICA_MP_CATEGORY_VALIDATION_ENABLED:true}
     mapping:
       categories:
-        - descriptor-path: company
-        - descriptor-path: businessDomain
-        - descriptor-path: businessSubdomain
+        - descriptor-path: specific.company
+        - descriptor-path: specific.businessDomain
+        - descriptor-path: specific.businessSubdomain
       custom-attributes: {}
     api:
       base-url: ${INFORMATICA_MP_BASE_URL:https://idmc-api.dm-em.informaticacloud.com/data360/marketplace}
       wrapper-base-url: ${INFORMATICA_MP_WRAPPER_BASE_URL:https://emw1-cai.dm-em.informaticacloud.com}
       endpoints:
         data-collections: /api/v2/data-collections
-        custom-attributes: /api/v1/integration/model/customAttributes
         categories: /api/v2/categories
         delivery-targets: /api/v2/delivery-targets
         delivery-templates: /api/v1/integration/provisioning/deliveryTemplates

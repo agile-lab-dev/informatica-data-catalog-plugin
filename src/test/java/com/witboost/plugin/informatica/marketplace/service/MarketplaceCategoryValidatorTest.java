@@ -8,6 +8,7 @@ import static org.mockito.Mockito.when;
 import com.witboost.plugin.informatica.common.exceptions.Problem;
 import com.witboost.plugin.informatica.common.model.informatica.DataContract;
 import com.witboost.plugin.informatica.marketplace.model.Category;
+import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -35,13 +36,13 @@ class MarketplaceCategoryValidatorTest {
                         .domain(domain)
                         .subdomain(subdomain)
                         .build());
+        dc.setMarketplaceCategoryPath(List.of(company, domain, subdomain));
         return dc;
     }
 
     @Test
     void emptyWhenCategoryExists() {
-        when(categoryService.getCategoryByCompanyDomainSubdomain(
-                        "example-company", "Marketing", "CAM"))
+        when(categoryService.getCategoryByPath(List.of("example-company", "Marketing", "CAM")))
                 .thenReturn(new Category());
 
         assertTrue(
@@ -52,7 +53,7 @@ class MarketplaceCategoryValidatorTest {
 
     @Test
     void problemWhenCategoryNotFound() {
-        when(categoryService.getCategoryByCompanyDomainSubdomain("bad", "Marketing", "CAM"))
+        when(categoryService.getCategoryByPath(List.of("bad", "Marketing", "CAM")))
                 .thenThrow(new IllegalArgumentException("Category not found for company: bad"));
 
         Optional<Problem> result =
@@ -65,7 +66,7 @@ class MarketplaceCategoryValidatorTest {
     @Test
     void emptyWhenInformaticaUnavailable() {
         // best-effort: a transient Informatica error must not fail validation
-        when(categoryService.getCategoryByCompanyDomainSubdomain(any(), any(), any()))
+        when(categoryService.getCategoryByPath(any()))
                 .thenThrow(new RuntimeException("Informatica unavailable"));
 
         assertTrue(

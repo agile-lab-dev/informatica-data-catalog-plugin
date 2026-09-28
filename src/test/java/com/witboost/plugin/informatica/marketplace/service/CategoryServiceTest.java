@@ -40,8 +40,7 @@ class CategoryServiceTest {
                         category("domain-id", "company-id", DOMAIN),
                         category("subdomain-id", "domain-id", SUBDOMAIN)));
 
-        var result =
-                categoryService.getCategoryByCompanyDomainSubdomain(COMPANY, DOMAIN, SUBDOMAIN);
+        var result = categoryService.getCategoryByPath(List.of(COMPANY, DOMAIN, SUBDOMAIN));
 
         assertEquals("subdomain-id", result.getId());
     }
@@ -57,8 +56,8 @@ class CategoryServiceTest {
                 assertThrows(
                         IllegalArgumentException.class,
                         () ->
-                                categoryService.getCategoryByCompanyDomainSubdomain(
-                                        COMPANY, "Cliente", SUBDOMAIN));
+                                categoryService.getCategoryByPath(
+                                    List.of(COMPANY, "Cliente", SUBDOMAIN)));
 
         // The accepted value must appear as a single quoted token, not split on its internal comma.
         assertTrue(

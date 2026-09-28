@@ -5,13 +5,13 @@ import static org.mockito.Mockito.*;
 
 import com.witboost.plugin.informatica.common.exceptions.ApiCallException;
 import com.witboost.plugin.informatica.common.model.informatica.DataContract;
+import com.witboost.plugin.informatica.marketplace.mapper.MarketplaceAttributeMapper;
 import com.witboost.plugin.informatica.marketplace.mapper.datacontract.CreateCollectionMapper;
 import com.witboost.plugin.informatica.marketplace.model.Category;
 import com.witboost.plugin.informatica.marketplace.model.CreateDataCollectionRequest;
 import com.witboost.plugin.informatica.marketplace.model.CreateDataCollectionResponse;
 import com.witboost.plugin.informatica.marketplace.service.client.DataCollectionApiClient;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -33,7 +33,7 @@ class DataCollectionServiceTest {
 
     @Mock private CategoryService categoryService;
 
-    @Mock private CustomAttributeService customAttributeService;
+        @Mock private MarketplaceAttributeMapper marketplaceAttributeMapper;
 
     @Mock private CreateCollectionMapper createCollectionMapper;
 
@@ -78,8 +78,8 @@ class DataCollectionServiceTest {
      * Test: Verify that createCollection successfully creates a collection
      *
      * <p>This test verifies the complete flow: 1. CategoryService is called to get the category by
-     * domain/subdomain 2. CustomAttributeService is called to get the custom attributes map 3.
-     * CreateCollectionMapper is used to map DataContract to CreateDataCollectionRequest 4.
+        * configured path 2. CreateCollectionMapper is used to map DataContract to
+        * CreateDataCollectionRequest 3.
      * DataCollectionApiClient.createCollection is called with the mapped request 5. The method
      * returns true on success
      */
@@ -90,16 +90,12 @@ class DataCollectionServiceTest {
 
         // Setup mocks for the service dependencies
         Category mockCategory = createMockCategory("category-123");
-        when(categoryService.getCategoryByCompanyDomainSubdomain(null, "TestDomain", null))
+        when(categoryService.getCategoryByPath(List.of("TestDomain")))
                 .thenReturn(mockCategory);
-
-        Map<String, String> customAttributesMap = new HashMap<>();
-        when(customAttributeService.getDataCollectionCustomAttributesNameId())
-                .thenReturn(customAttributesMap);
 
         CreateDataCollectionRequest mockRequest = createMockCreateDataCollectionRequest();
         when(createCollectionMapper.mapToCreateDataCollectionRequest(
-                        dataContract, "category-123", customAttributesMap))
+                        dataContract, "category-123"))
                 .thenReturn(mockRequest);
 
         CreateDataCollectionResponse mockResponse = new CreateDataCollectionResponse();
@@ -113,12 +109,9 @@ class DataCollectionServiceTest {
         assertNotNull(id);
 
         // Verify all dependencies were called correctly
-        verify(categoryService, times(1))
-                .getCategoryByCompanyDomainSubdomain(null, "TestDomain", null);
-        verify(customAttributeService, times(1)).getDataCollectionCustomAttributesNameId();
+        verify(categoryService, times(1)).getCategoryByPath(List.of("TestDomain"));
         verify(createCollectionMapper, times(1))
-                .mapToCreateDataCollectionRequest(
-                        dataContract, "category-123", customAttributesMap);
+                .mapToCreateDataCollectionRequest(dataContract, "category-123");
         verify(dataCollectionApiClient, times(1)).createCollection(mockRequest);
     }
 
@@ -134,16 +127,12 @@ class DataCollectionServiceTest {
         DataContract dataContract = createSampleDataContract();
 
         Category mockCategory = createMockCategory("category-123");
-        when(categoryService.getCategoryByCompanyDomainSubdomain(null, "TestDomain", null))
+        when(categoryService.getCategoryByPath(List.of("TestDomain")))
                 .thenReturn(mockCategory);
-
-        Map<String, String> customAttributesMap = new HashMap<>();
-        when(customAttributeService.getDataCollectionCustomAttributesNameId())
-                .thenReturn(customAttributesMap);
 
         CreateDataCollectionRequest mockRequest = createMockCreateDataCollectionRequest();
         when(createCollectionMapper.mapToCreateDataCollectionRequest(
-                        dataContract, "category-123", customAttributesMap))
+                        dataContract, "category-123"))
                 .thenReturn(mockRequest);
 
         // Simulate API failure
@@ -181,7 +170,7 @@ class DataCollectionServiceTest {
 
         dataContract.getBaseCharacteristics().setName("Test Data Collection");
         dataContract.getBaseCharacteristics().setDescription("This is a test data collection");
-        dataContract.getReferenceContext().setDomain("TestDomain");
+        dataContract.setMarketplaceCategoryPath(List.of("TestDomain"));
         dataContract.getBaseCharacteristics().setStatus("ACTIVE");
 
         return dataContract;

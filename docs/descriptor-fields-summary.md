@@ -6,15 +6,15 @@ The descriptor is the original Witboost Data Product Descriptor. The plugin pars
 
 ## Mapping configurability
 
-Mapping is configurable, and the structural descriptor paths used by the neutral tree are configurable under `informatica.descriptor`.
+Mapping is configurable, and the structural descriptor paths used by the neutral tree are configurable under `informatica.descriptor`. Children are always read from the local `components` field.
 
 ### Configurable through YAML
 
 The following settings are controlled by `informatica.marketplace.mapping`:
 
-- `categories`: the Marketplace category hierarchy. Each `descriptor-path` is resolved relative to the descriptor `specific` object and is evaluated in list order.
-- `custom-attributes`: maps an Informatica custom attribute name to a descriptor path. Each mapping can define `required`, `default-value`, and `transformer`.
-- `informatica.descriptor`: configures component, child-component, discriminator, identifier, publication, shoppable, and schema paths.
+- `categories`: the Marketplace category hierarchy. Each `descriptor-path` is resolved from the data-product root and evaluated in list order.
+- `custom-attributes`: maps a technical Informatica attribute ID to a path from the data-product root. Each mapping can define `required`, `default-value`, and `transformer`.
+- `informatica.descriptor`: configures discriminator, identifier, publication, shoppable, and schema paths relative to the node being processed.
 
 Example:
 
@@ -23,20 +23,30 @@ informatica:
   marketplace:
     mapping:
       categories:
-        - descriptor-path: company
-        - descriptor-path: businessDomain
-        - descriptor-path: businessSubdomain
+        - descriptor-path: specific.company
+        - descriptor-path: specific.businessDomain
+        - descriptor-path: specific.businessSubdomain
       custom-attributes:
-        Business Owner:
-          descriptor-path: businessOwner
+        com.infa.odin.models.custom.ca_business_owner:
+          descriptor-path: specific.businessOwner
           required: true
-        Classification:
-          descriptor-path: dataClassification
+        com.infa.odin.models.custom.ca_classification:
+          descriptor-path: specific.dataClassification
           default-value: Internal
           transformer: identity
 ```
 
-Custom attribute mappings should provide `informatica-id`. The ID is the technical Informatica identifier; display names are not used as application identifiers. Runtime discovery may validate the ID where the tenant API supports it.
+Path roots are explicit by configuration context:
+
+| Configuration | Path root |
+|---|---|
+| `descriptor.data-product.*` | Data-product descriptor root |
+| `descriptor.output-port.*` | Current output-port object |
+| `descriptor.subcomponent.*` | Current subcomponent object |
+| `marketplace.mapping.categories[]` | Data-product descriptor root |
+| `marketplace.mapping.custom-attributes.*.descriptor-path` | Data-product descriptor root |
+
+No path implicitly searches a parent or the descriptor root. Custom attribute map keys are sent directly as Informatica IDs; display-name discovery is not performed.
 
 The built-in value transformer is `identity`. Additional transformers can be provided as Spring beans implementing `DescriptorValueTransformer`; their `name()` must match the configured `transformer` value.
 
@@ -231,7 +241,6 @@ components:
 informatica:
   descriptor:
     data-product:
-      children-path: components
       kind-path: kind
       id-path: id
     output-port:
@@ -479,17 +488,14 @@ informatica:
   marketplace:
     mapping:
       custom-attributes:
-        Business Owner:
-          descriptor-path: customAttributes.Business Owner
-          informatica-id: attr-001
+        attr-001:
+          descriptor-path: specific.customAttributes.Business Owner
           required: true
-        Data Classification:
-          descriptor-path: customAttributes.Data Classification
-          informatica-id: attr-002
+        attr-002:
+          descriptor-path: specific.customAttributes.Data Classification
           required: false
-        Cost Center:
-          descriptor-path: customAttributes.Cost Center
-          informatica-id: attr-003
+        attr-003:
+          descriptor-path: specific.customAttributes.Cost Center
           default-value: UNASSIGNED
 ```
 
@@ -534,6 +540,6 @@ informatica:
 | `shoppable: true` (default) | Included | Included |
 | `shoppable: false` | Included | Excluded |
 | Nested port shoppable ≠ parent | Independent evaluation | Parent and child filtered separately |
-| Custom attributes provided | N/A | Mapped via `informatica-id` |
+| Custom attributes provided | N/A | Map key used as technical Informatica ID |
 | Missing dataLength | Defaults to 0 | — |
 | No dataContract schema | Parent only, no assets | Can be container node |

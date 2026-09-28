@@ -10,6 +10,7 @@ import com.witboost.plugin.informatica.marketplace.model.Category;
 import com.witboost.plugin.informatica.marketplace.model.DataCollection;
 import com.witboost.plugin.informatica.marketplace.service.CategoryService;
 import com.witboost.plugin.informatica.marketplace.service.DataContractResolverService;
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -21,8 +22,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class DataContractResolverServiceTest {
 
     @Mock private DataCollectionApiClient dataCollectionApiClient;
-
-    @Mock private CustomAttributeApiClient customAttributeApiClient;
 
     @Mock private CategoryService categoryService;
 
@@ -44,6 +43,8 @@ class DataContractResolverServiceTest {
         referenceContext.setDomain("TestDomain");
         referenceContext.setSubdomain("TestSubdomain");
         dataContract.setReferenceContext(referenceContext);
+        dataContract.setMarketplaceCategoryPath(
+                List.of("TestCompany", "TestDomain", "TestSubdomain"));
         dataContract.setAdditionalInformation(new DataContract.AdditionalInformation());
 
         // Initialize mock DataCollection
@@ -65,8 +66,8 @@ class DataContractResolverServiceTest {
         Category category = new Category();
         category.setId(categoryId);
 
-        when(categoryService.getCategoryByCompanyDomainSubdomain(
-                        eq("TestCompany"), eq("TestDomain"), eq("TestSubdomain")))
+        when(categoryService.getCategoryByPath(
+                        List.of("TestCompany", "TestDomain", "TestSubdomain")))
                 .thenReturn(category);
         when(dataCollectionApiClient.getCollectionByNameAndCategoryId(
                         eq(collectionName), eq(categoryId)))
@@ -90,8 +91,8 @@ class DataContractResolverServiceTest {
         Category category = new Category();
         category.setId(categoryId);
 
-        when(categoryService.getCategoryByCompanyDomainSubdomain(
-                        eq("TestCompany"), eq("TestDomain"), eq("TestSubdomain")))
+        when(categoryService.getCategoryByPath(
+                        List.of("TestCompany", "TestDomain", "TestSubdomain")))
                 .thenReturn(category);
         // Mock returns null for non-existent collection
         when(dataCollectionApiClient.getCollectionByNameAndCategoryId(

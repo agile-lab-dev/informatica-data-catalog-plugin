@@ -8,7 +8,7 @@ import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-/** Maps descriptor-provided custom values to runtime-resolved Informatica attribute IDs. */
+/** Applies configured defaults and transformations to ID-keyed Marketplace attributes. */
 @Component
 public class MarketplaceAttributeMapper {
 
@@ -27,45 +27,36 @@ public class MarketplaceAttributeMapper {
                                         DescriptorValueTransformer::name, t -> t));
     }
 
-    public Map<String, Object> map(
-            DataContract dataContract, Map<String, String> attributeNamesToIds) {
-        Map<String, Object> values = new LinkedHashMap<>(dataContract.getCustomAttributes());
+        public Map<String, Object> map(DataContract dataContract) {
+                Map<String, Object> result = new LinkedHashMap<>();
         properties
                 .getCustomAttributes()
                 .forEach(
-                        (name, mapping) -> {
-                            Object value = values.get(mapping.getDescriptorPath());
+                                                (attributeId, mapping) -> {
+                                                        Object value = dataContract.getCustomAttributes().get(attributeId);
                             if (value == null) value = mapping.getDefaultValue();
                             if (mapping.isRequired() && value == null) {
                                 throw new IllegalArgumentException(
-                                        "Required Marketplace attribute is missing: " + name);
+                                                                                "Required Marketplace attribute is missing: "
+                                                                                                + attributeId
+                                                                                                + " (descriptor path: "
+                                                                                                + mapping.getDescriptorPath()
+                                                                                                + ")");
                             }
-                            if (value != null) values.put(name, value);
+                                                        if (value != null) {
+                                                                result.put(attributeId, transform(attributeId, value));
+                                                        }
                         });
-        Map<String, Object> result = new LinkedHashMap<>();
-        values.forEach(
-                (name, value) -> {
-                    MarketplaceMappingProperties.AttributeMapping mapping =
-                            properties.getCustomAttributes().get(name);
-                    String id =
-                            mapping != null && mapping.getInformaticaId() != null
-                                    ? mapping.getInformaticaId()
-                                    : attributeNamesToIds.get(name);
-                    if (id != null) result.put(id, transform(name, value));
-                });
         return result;
     }
 
     private Object transform(String name, Object value) {
         MarketplaceMappingProperties.AttributeMapping mapping =
                 properties.getCustomAttributes().get(name);
-        return mapping == null || mapping.getTransformer() == null
-                ? value
-                : transformers
-                        .getOrDefault(
-                                mapping.getTransformer(),
-                                unknownTransformer(mapping.getTransformer()))
-                        .transform(value);
+        if (mapping == null || mapping.getTransformer() == null) return value;
+        DescriptorValueTransformer transformer = transformers.get(mapping.getTransformer());
+        if (transformer == null) return unknownTransformer(mapping.getTransformer()).transform(value);
+        return transformer.transform(value);
     }
 
     private DescriptorValueTransformer unknownTransformer(String name) {

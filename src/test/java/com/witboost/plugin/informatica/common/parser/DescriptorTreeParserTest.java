@@ -43,9 +43,6 @@ class DescriptorTreeParserTest {
 
     private static DescriptorTreeParser parser() {
         DescriptorStructureProperties properties = new DescriptorStructureProperties();
-        properties.getDataProduct().setChildrenPath("components");
-        properties.getOutputPort().setChildrenPath("components");
-        properties.getSubcomponent().setChildrenPath("components");
         properties.getOutputPort().setKindValue("outputport");
         properties.getSubcomponent().setKindValue("outputport");
         properties.getSchema().setPath("dataContract.schema");

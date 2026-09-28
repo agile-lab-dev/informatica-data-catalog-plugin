@@ -10,6 +10,8 @@ import java.util.List;
 /** Builds the Catalog and Marketplace-neutral tree from a raw YAML descriptor. */
 public final class DescriptorTreeParser {
 
+    private static final String COMPONENTS = "components";
+
     private final ObjectMapper objectMapper = new ObjectMapper(new YAMLFactory());
     private final DescriptorStructureProperties properties;
 
@@ -54,7 +56,7 @@ public final class DescriptorTreeParser {
                         publishEnabled,
                         readBoolean(node, nodeProperties.getShoppablePath(), false),
                         readArray(node, properties.getSchema().getPath()));
-        List<JsonNode> childNodes = readArray(node, nodeProperties.getChildrenPath());
+        List<JsonNode> childNodes = readArray(node, COMPONENTS);
         for (JsonNode child : childNodes) {
             if (!matchesKind(child, childProperties)) {
                 continue;
@@ -126,11 +128,6 @@ public final class DescriptorTreeParser {
     }
 
     private JsonNode readPath(JsonNode node, String path) {
-        JsonNode current = node;
-        for (String segment : path.split("\\.")) {
-            if (current == null || !current.isObject()) return null;
-            current = current.get(segment);
-        }
-        return current;
+        return DescriptorPathResolver.read(node, path);
     }
 }

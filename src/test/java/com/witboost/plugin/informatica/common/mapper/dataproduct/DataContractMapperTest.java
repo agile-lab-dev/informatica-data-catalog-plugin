@@ -10,7 +10,9 @@ import com.witboost.plugin.informatica.common.model.informatica.DeliveryTarget;
 import com.witboost.plugin.informatica.common.model.witboost.DataProduct;
 import com.witboost.plugin.informatica.common.parser.Parser;
 import com.witboost.plugin.informatica.common.utils.ResourceUtils;
+import com.witboost.plugin.informatica.marketplace.config.MarketplaceMappingProperties;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.mapstruct.factory.Mappers;
@@ -22,6 +24,53 @@ class DataContractMapperTest {
             Mappers.getMapper(DeliveryTargetMapper.class);
     private final DataAssetMapper dataAssetMapper = Mappers.getMapper(DataAssetMapper.class);
     private ObjectMapper objectMapper = new ObjectMapper();
+
+    @Test
+    void mapsConfiguredMarketplacePathsFromDataProductRoot() {
+        MarketplaceMappingProperties properties = new MarketplaceMappingProperties();
+        properties.setCategories(
+                List.of(
+                        categoryLevel("specific.classification.organization"),
+                        categoryLevel("specific.classification.domain")));
+        MarketplaceMappingProperties.AttributeMapping owner =
+                new MarketplaceMappingProperties.AttributeMapping();
+        owner.setDescriptorPath("specific.customAttributes.owner");
+        MarketplaceMappingProperties.AttributeMapping score =
+                new MarketplaceMappingProperties.AttributeMapping();
+        score.setDescriptorPath("specific.customAttributes.score");
+        properties.setCustomAttributes(Map.of("attribute-owner", owner, "attribute-score", score));
+        mapper.setMappingProperties(properties);
+
+        DataProduct dataProduct =
+                Parser.parseDataProduct(
+                                """
+                                id: product-id
+                                name: Product
+                                specific:
+                                  classification:
+                                    organization: Example Organization
+                                    domain: Sales
+                                  customAttributes:
+                                    owner: Example Owner
+                                    score: 99
+                                """)
+                        .get();
+
+        DataContract result = mapper.toDataContract(dataProduct);
+
+        assertEquals(
+                List.of("Example Organization", "Sales"),
+                result.getMarketplaceCategoryPath());
+        assertEquals("Example Owner", result.getCustomAttributes().get("attribute-owner"));
+        assertEquals(99, result.getCustomAttributes().get("attribute-score"));
+    }
+
+    private static MarketplaceMappingProperties.CategoryLevel categoryLevel(String path) {
+        MarketplaceMappingProperties.CategoryLevel level =
+                new MarketplaceMappingProperties.CategoryLevel();
+        level.setDescriptorPath(path);
+        return level;
+    }
 
     @Test
     void toDataContractMapsCorrectly() throws Exception {

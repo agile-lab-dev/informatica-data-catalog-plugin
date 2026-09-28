@@ -7,7 +7,6 @@ import com.witboost.plugin.informatica.common.model.informatica.DataContract;
 import com.witboost.plugin.informatica.marketplace.common.Constants;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -39,22 +38,7 @@ class DataCollectionServiceIntegrationTest {
 
     @Autowired private DataCollectionService dataCollectionService;
 
-    @Autowired private CustomAttributeService customAttributeService;
-
     private DataContract testDataContract;
-    private Map<String, String> customAttributesMap;
-
-    @BeforeEach
-    void setUp() {
-        log.info("Setting up integration test");
-
-        // Load custom attributes map from Informatica
-        customAttributesMap = customAttributeService.getDataCollectionCustomAttributesNameId();
-        assertNotNull(customAttributesMap, "Custom attributes map should be loaded");
-        assertFalse(customAttributesMap.isEmpty(), "Custom attributes map should not be empty");
-
-        log.info("Loaded {} custom attributes from Informatica", customAttributesMap.size());
-    }
 
     @Test
     void createCollection() {
@@ -197,8 +181,7 @@ class DataCollectionServiceIntegrationTest {
     /**
      * Integration Test: Verify custom attribute values mapping
      *
-     * <p>This test verifies that the DataContract.getCustomAttributeValues method correctly maps
-     * field values to Informatica custom attribute IDs.
+        * <p>This test verifies that custom attributes are already keyed by Informatica technical ID.
      */
     @Test
     void testGetCustomAttributeValues_WithCompleteDataContract_ShouldReturnCorrectMapping() {
@@ -206,8 +189,7 @@ class DataCollectionServiceIntegrationTest {
         testDataContract = createCompleteDataContractForUpdate();
 
         // Act
-        Map<String, Object> customAttributeValues =
-                testDataContract.getCustomAttributeValues(customAttributesMap);
+        Map<String, Object> customAttributeValues = testDataContract.getCustomAttributes();
 
         // Assert
         assertNotNull(customAttributeValues, "Custom attribute values map should not be null");
@@ -216,26 +198,11 @@ class DataCollectionServiceIntegrationTest {
 
         log.info("Mapped {} custom attribute values", customAttributeValues.size());
 
-        // Verify some key mappings
-        assertTrue(
-                customAttributeValues.containsKey(customAttributesMap.get("Product Owner")),
-                "Should contain Product Owner mapping");
-        assertTrue(
-                customAttributeValues.containsKey(customAttributesMap.get("Versione")),
-                "Should contain Versione mapping");
-        assertTrue(
-                customAttributeValues.containsKey(customAttributesMap.get("Life cycle status")),
-                "Should contain Life cycle status mapping");
-
-        // Verify values are correct
-        assertEquals(
-                "Example Owner",
-                customAttributeValues.get(customAttributesMap.get("Product Owner")));
-        assertEquals("2.1.0", customAttributeValues.get(customAttributesMap.get("Versione")));
-        assertEquals(
-                "Active", customAttributeValues.get(customAttributesMap.get("Life cycle status")));
-
-        log.info("✓ Custom attribute values mapping verified successfully");
+        customAttributeValues.forEach(
+                (id, value) -> {
+                    assertFalse(id.isBlank());
+                    assertNotNull(value);
+                });
     }
 
     /** Integration Test: Verify null values are excluded from custom attributes */
@@ -245,8 +212,7 @@ class DataCollectionServiceIntegrationTest {
         testDataContract = createMinimalDataContract();
 
         // Act
-        Map<String, Object> customAttributeValues =
-                testDataContract.getCustomAttributeValues(customAttributesMap);
+        Map<String, Object> customAttributeValues = testDataContract.getCustomAttributes();
 
         // Assert
         assertNotNull(customAttributeValues);

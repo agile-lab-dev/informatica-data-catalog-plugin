@@ -23,7 +23,6 @@ public class DescriptorStructureProperties {
     @Getter
     @Setter
     public static class NodeProperties {
-        @NotBlank private String childrenPath = "components";
         @NotBlank private String kindPath = "kind";
         private String kindValue;
         @NotBlank private String idPath = "id";

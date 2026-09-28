@@ -1,15 +1,21 @@
 package com.witboost.plugin.informatica.common.mapper.dataproduct;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.witboost.plugin.informatica.common.model.informatica.DataContract;
 import com.witboost.plugin.informatica.common.model.informatica.DeliveryTarget;
 import com.witboost.plugin.informatica.common.model.witboost.DataProduct;
 import com.witboost.plugin.informatica.common.model.witboost.OutputPort;
 import com.witboost.plugin.informatica.common.model.witboost.Specific;
+import com.witboost.plugin.informatica.common.parser.DescriptorPathResolver;
+import com.witboost.plugin.informatica.marketplace.config.MarketplaceMappingProperties;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
 import org.mapstruct.*;
+import org.springframework.beans.factory.annotation.Autowired;
 
 /**
  * Mapper interface for converting between `DataProduct` and `DataContract` objects. This mapper
@@ -37,7 +43,14 @@ import org.mapstruct.*;
 @Mapper(
         componentModel = "spring",
         uses = {DeliveryTargetMapper.class, DataAssetMapper.class})
-public interface DataContractMapper {
+public abstract class DataContractMapper {
+
+    private MarketplaceMappingProperties mappingProperties = defaultMappingProperties();
+
+    @Autowired(required = false)
+    public void setMappingProperties(MarketplaceMappingProperties mappingProperties) {
+        this.mappingProperties = mappingProperties;
+    }
 
     @Mapping(target = "baseCharacteristics.identifier", source = "id")
     @Mapping(target = "baseCharacteristics.name", source = "name")
@@ -59,7 +72,7 @@ public interface DataContractMapper {
             source = "dataProduct",
             qualifiedByName = "extractInformationSLA")
     @Mapping(target = "deliveryTargets", ignore = true) // Mapped in toDataContractWithOutputPorts
-    DataContract toDataContract(DataProduct dataProduct);
+    public abstract DataContract toDataContract(DataProduct dataProduct);
 
     /**
      * Converts a DataProduct to a DataContract with full OutputPort mapping. This method provides
@@ -70,7 +83,7 @@ public interface DataContractMapper {
      * @param dataAssetMapper the mapper for DataAsset conversion
      * @return the mapped DataContract with all OutputPorts and DataAssets
      */
-    default DataContract toDataContractWithOutputPorts(
+    public DataContract toDataContractWithOutputPorts(
             DataProduct dataProduct,
             DeliveryTargetMapper deliveryTargetMapper,
             DataAssetMapper dataAssetMapper) {
@@ -93,49 +106,98 @@ public interface DataContractMapper {
     }
 
     @Named("extractInformationSLA")
-    default String extractInformationSLA(DataProduct dataProduct) {
+    public String extractInformationSLA(DataProduct dataProduct) {
         Optional<String> informationSLA = dataProduct.getInformationSLA();
         String value = informationSLA != null ? informationSLA.orElse(null) : null;
         return value;
     }
 
     @Named("extractFullyQualifiedName")
-    default String extractFullyQualifiedName(DataProduct dataProduct) {
+    public String extractFullyQualifiedName(DataProduct dataProduct) {
         Optional<String> fqn = dataProduct.getFullyQualifiedName();
         return fqn != null ? fqn.orElse(null) : null;
     }
 
     @Named("extractStatus")
-    default String extractStatus(DataProduct dataProduct) {
+    public String extractStatus(DataProduct dataProduct) {
         Optional<String> status = dataProduct.getStatus();
         String value = status != null ? status.orElse(null) : null;
         return "Published".equalsIgnoreCase(value) ? "Published" : "Unpublished";
     }
 
     @AfterMapping
-    default void mapJsonFields(@MappingTarget DataContract target, DataProduct source) {
+    public void mapJsonFields(@MappingTarget DataContract target, DataProduct source) {
         JsonNode jsonData = source.getSpecific();
-        if (target.getReferenceContext() != null) {
-            mapReferenceContext(jsonData, target.getReferenceContext());
-        }
+        mapMarketplaceFields(target, source);
         if (target.getBaseCharacteristics() != null) {
             mapBaseCharacteristics(jsonData, target.getBaseCharacteristics());
         }
         if (target.getAdditionalInformation() != null) {
             mapAdditionalInformation(jsonData, target.getAdditionalInformation());
         }
-        if (jsonData != null && jsonData.has("customAttributes")) {
-            jsonData.get("customAttributes")
-                    .fields()
-                    .forEachRemaining(
-                            entry ->
-                                    target.getCustomAttributes()
-                                            .put(
-                                                    entry.getKey(),
-                                                    entry.getValue().isValueNode()
-                                                            ? entry.getValue().asText()
-                                                            : entry.getValue()));
+    }
+
+    private void mapMarketplaceFields(DataContract target, DataProduct source) {
+        JsonNode root = descriptorRoot(source);
+        List<String> categoryPath = new ArrayList<>();
+        for (MarketplaceMappingProperties.CategoryLevel level : mappingProperties.getCategories()) {
+            JsonNode value = DescriptorPathResolver.read(root, level.getDescriptorPath());
+            categoryPath.add(value == null || value.isNull() ? null : value.asText());
         }
+        target.setMarketplaceCategoryPath(categoryPath);
+        mapLegacyReferenceContext(target.getReferenceContext(), categoryPath);
+
+        target.getCustomAttributes().clear();
+        mappingProperties
+                .getCustomAttributes()
+                .forEach(
+                        (attributeId, mapping) -> {
+                            JsonNode value =
+                                    DescriptorPathResolver.read(root, mapping.getDescriptorPath());
+                            if (value != null && !value.isNull()) {
+                                target.getCustomAttributes()
+                                        .put(attributeId, descriptorValue(value));
+                            }
+                        });
+    }
+
+    private JsonNode descriptorRoot(DataProduct source) {
+        if (source.getRawDataProduct() != null) return source.getRawDataProduct();
+        ObjectNode root = JsonNodeFactory.instance.objectNode();
+        if (source.getSpecific() != null) root.set("specific", source.getSpecific());
+        return root;
+    }
+
+    private Object descriptorValue(JsonNode value) {
+        if (value.isTextual()) return value.textValue();
+        if (value.isNumber()) return value.numberValue();
+        if (value.isBoolean()) return value.booleanValue();
+        return value;
+    }
+
+    private void mapLegacyReferenceContext(
+            DataContract.ReferenceContext context, List<String> categoryPath) {
+        if (context == null) return;
+        if (!categoryPath.isEmpty()) context.setCompany(categoryPath.get(0));
+        if (categoryPath.size() > 1) context.setDomain(categoryPath.get(1));
+        if (categoryPath.size() > 2) context.setSubdomain(categoryPath.get(2));
+    }
+
+    private static MarketplaceMappingProperties defaultMappingProperties() {
+        MarketplaceMappingProperties properties = new MarketplaceMappingProperties();
+        properties.setCategories(
+                List.of(
+                        categoryLevel("specific.company"),
+                        categoryLevel("specific.businessDomain"),
+                        categoryLevel("specific.businessSubdomain")));
+        return properties;
+    }
+
+    private static MarketplaceMappingProperties.CategoryLevel categoryLevel(String path) {
+        MarketplaceMappingProperties.CategoryLevel level =
+                new MarketplaceMappingProperties.CategoryLevel();
+        level.setDescriptorPath(path);
+        return level;
     }
 
     private void mapBaseCharacteristics(
@@ -154,13 +216,6 @@ public interface DataContractMapper {
             // Apply defaults even when jsonData is null
             characteristics.setCertifiedUse("Generic");
         }
-    }
-
-    private void mapReferenceContext(JsonNode jsonData, DataContract.ReferenceContext context) {
-        if (jsonData == null) return;
-        setTextIfPresent(jsonData, "company", context::setCompany);
-        setTextIfPresent(jsonData, "businessDomain", context::setDomain);
-        setTextIfPresent(jsonData, "businessSubdomain", context::setSubdomain);
     }
 
     private void mapAdditionalInformation(

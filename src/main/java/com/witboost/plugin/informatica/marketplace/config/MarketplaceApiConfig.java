@@ -38,10 +38,6 @@ public record MarketplaceApiConfig(
                     String categories,
             @NotBlank(
                             message =
-                                    "informatica.marketplace.api.endpoints.custom-attributes is required")
-                    String customAttributes,
-            @NotBlank(
-                            message =
                                     "informatica.marketplace.api.endpoints.delivery-targets is required")
                     String deliveryTargets,
             @NotBlank(
@@ -70,15 +66,6 @@ public record MarketplaceApiConfig(
      */
     public String getDataCollectionsUrl() {
         return baseUrl() + endpoints().dataCollections();
-    }
-
-    /**
-     * Gets the complete URL for the custom attributes endpoint.
-     *
-     * @return The full URL including base URL and custom attributes endpoint
-     */
-    public String getCustomAttributesUrl() {
-        return baseUrl() + endpoints().customAttributes();
     }
 
     /**

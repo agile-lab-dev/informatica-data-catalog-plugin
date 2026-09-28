@@ -47,7 +47,7 @@ GitLab CI runs the same work in separate check, test, and build stages on Java 1
 
 Runtime configuration is stored in `src/main/resources/application.yml`. Credentials and tenant-specific values must come from deployment secrets or environment variables; no tenant identifier or credential is provided by default.
 
-The default profile supports API endpoints, authentication settings, publication flags, descriptor topology, validation levels, technology-keyed Catalog sources, Marketplace categories, and custom attributes. Marketplace custom attribute mappings can provide the technical `informatica-id`; display names are not used as identifiers.
+The default profile supports API endpoints, authentication settings, publication flags, descriptor topology, validation levels, technology-keyed Catalog sources, Marketplace categories, and custom attributes. Each Marketplace custom attribute is configured directly under its technical Informatica ID.
 
 Catalog sources are optional per technology. Metadata synchronization runs only for configured and enabled sources.
 
@@ -135,24 +135,25 @@ Start from `src/main/resources/application.yml` and override values through a pr
 
 ```yaml
 informatica:
+  marketplace:
+    category-validation-enabled: true
+    mapping:
+      categories:
+        - descriptor-path: specific.company
+        - descriptor-path: specific.businessDomain
+        - descriptor-path: specific.businessSubdomain
+      custom-attributes:
+        com.infa.odin.models.custom.ca_business_owner:
+          descriptor-path: specific.businessOwner
+          required: true
+        com.infa.odin.models.custom.ca_classification:
+          descriptor-path: specific.dataClassification
+          default-value: Internal
+          transformer: identity
   api:
     base-url: https://example-idmc.example.com
     username: ${INFORMATICA_DCMP_USERNAME}
     password: ${INFORMATICA_DCMP_PASSWORD}
-    category-validation-enabled: true
-    mapping:
-      categories:
-        - descriptor-path: company
-        - descriptor-path: businessDomain
-        - descriptor-path: businessSubdomain
-      custom-attributes:
-        Business Owner:
-          descriptor-path: businessOwner
-          required: true
-        Classification:
-          descriptor-path: dataClassification
-          default-value: Internal
-          transformer: identity
   data-catalog:
     catalog-source:
       enable-metadata-sync: true
@@ -166,17 +167,20 @@ informatica:
         production: HIGH
 ```
 
-`mapping.categories` defines the category hierarchy in order. Each `descriptor-path` is relative to `specific`; the configured levels must exist in the descriptor and in Informatica. `mapping.custom-attributes` maps a configured key to a descriptor path. Prefer the technical Informatica ID explicitly:
+`mapping.categories` defines the category hierarchy in order. Category and custom-attribute paths are relative to the data-product root, so fields under `specific` include that segment. The configured category levels must exist in both the descriptor and Informatica.
+
+Structure paths are relative to the node being processed: data-product paths start at the descriptor root, output-port paths start at that output-port object, and subcomponent paths start at that subcomponent object. Children are always read from the local `components` field.
+
+The key under `mapping.custom-attributes` is the technical Informatica attribute ID; no display name lookup is performed:
 
 ```yaml
 custom-attributes:
-  Business Owner:
-    informatica-id: com.infa.odin.models.custom.ca_example
-    descriptor-path: businessOwner
+  com.infa.odin.models.custom.ca_example:
+    descriptor-path: specific.businessOwner
     required: true
 ```
 
-`required`, `default-value`, and `transformer` control validation and conversion. The built-in transformer is `identity`; custom transformers are Spring beans implementing `DescriptorValueTransformer`. Where Informatica provides custom-attribute discovery, the API can be used to verify the configured ID, but the display name is never the application identifier.
+`required`, `default-value`, and `transformer` control validation and conversion. The built-in transformer is `identity`; custom transformers are Spring beans implementing `DescriptorValueTransformer`.
 
 `data-catalog.catalog-source.sources` is a map keyed by the exact lower-case output-port technology. A missing source causes validation to fail for that output port. Set `enable-metadata-sync` to `false` when source synchronization is not part of the deployment.
 

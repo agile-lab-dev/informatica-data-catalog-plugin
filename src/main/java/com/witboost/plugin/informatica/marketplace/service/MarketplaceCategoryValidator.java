@@ -40,20 +40,11 @@ public class MarketplaceCategoryValidator {
             log.debug("Marketplace category validation is disabled, skipping");
             return Optional.empty();
         }
-        var ref = dataContract.getReferenceContext();
-        log.info(
-                "Validating Marketplace category exists: company '{}', domain '{}', subdomain '{}'",
-                ref.getCompany(),
-                ref.getDomain(),
-                ref.getSubdomain());
+        var categoryPath = dataContract.getMarketplaceCategoryPath();
+        log.info("Validating Marketplace category path exists: {}", categoryPath);
         try {
-            categoryService.getCategoryByCompanyDomainSubdomain(
-                    ref.getCompany(), ref.getDomain(), ref.getSubdomain());
-            log.info(
-                    "Marketplace category found: company '{}', domain '{}', subdomain '{}'",
-                    ref.getCompany(),
-                    ref.getDomain(),
-                    ref.getSubdomain());
+            categoryService.getCategoryByPath(categoryPath);
+            log.info("Marketplace category path found: {}", categoryPath);
             return Optional.empty();
         } catch (IllegalArgumentException e) {
             return Optional.of(new Problem(e.getMessage()));

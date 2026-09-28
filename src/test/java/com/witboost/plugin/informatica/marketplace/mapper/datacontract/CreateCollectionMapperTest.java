@@ -14,21 +14,15 @@ class CreateCollectionMapperTest {
     private final CreateCollectionMapper mapper = Mappers.getMapper(CreateCollectionMapper.class);
 
     @Test
-    void mapsDescriptorCustomAttributesUsingRuntimeIds() {
+        void mapsDescriptorCustomAttributesUsingTechnicalIdKeys() {
         DataContract contract = new DataContract();
         contract.getBaseCharacteristics().setName("Example Collection");
         contract.getBaseCharacteristics().setDescription("Example description");
-        contract.setCustomAttributes(Map.of("businessOwner", "Example Owner", "qualityScore", 99));
+        contract.setCustomAttributes(
+                Map.of("attribute-owner", "Example Owner", "attribute-quality", 99));
 
         CreateDataCollectionRequest result =
-                mapper.mapToCreateDataCollectionRequest(
-                        contract,
-                        "category-id",
-                        Map.of(
-                                "businessOwner",
-                                "attribute-owner",
-                                "qualityScore",
-                                "attribute-quality"));
+                mapper.mapToCreateDataCollectionRequest(contract, "category-id");
 
         assertNotNull(result);
         assertEquals("Example Collection", result.getName());

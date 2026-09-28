@@ -123,7 +123,10 @@ public class DataContract {
      */
     @Builder.Default private ValidationLevel validationLevel = ValidationLevel.LOW;
 
-    /** Additional descriptor attributes mapped by configured Informatica attribute name. */
+    /** Ordered Marketplace category names resolved from the configured descriptor paths. */
+    @JsonIgnore @Builder.Default private List<String> marketplaceCategoryPath = new ArrayList<>();
+
+    /** Additional descriptor attributes keyed by technical Informatica attribute ID. */
     @Builder.Default private Map<String, Object> customAttributes = new HashMap<>();
 
     /**
@@ -583,30 +586,4 @@ public class DataContract {
         private String address;
     }
 
-    /**
-     * Maps DataContract field values to Informatica custom attribute IDs.
-     *
-     * <p>This method takes a map of custom attribute names to IDs (from Informatica API) and
-     * returns a map of IDs to actual values from this DataContract instance.
-     *
-     * <p><b>Example:</b>
-     *
-     * <pre>
-     * Input:  {"Product Owner" -> "com.infa.odin.models.custom.ca_7007540664947074703", ...}
-     * Output: {"com.infa.odin.models.custom.ca_7007540664947074703" -> "Example Owner", ...}
-     * </pre>
-     *
-     * @param customAttributesMap Map of custom attribute names to Informatica IDs
-     * @return Map of custom attribute IDs to values from this DataContract (nulls are excluded)
-     */
-    public Map<String, Object> getCustomAttributeValues(Map<String, String> customAttributesMap) {
-        Map<String, Object> result = new HashMap<>();
-        for (Map.Entry<String, Object> attribute : customAttributes.entrySet()) {
-            String attributeId = customAttributesMap.get(attribute.getKey());
-            if (attributeId != null && attribute.getValue() != null) {
-                result.put(attributeId, attribute.getValue());
-            }
-        }
-        return result;
-    }
 }

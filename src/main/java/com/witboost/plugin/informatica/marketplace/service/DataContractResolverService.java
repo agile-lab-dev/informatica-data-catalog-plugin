@@ -3,7 +3,6 @@ package com.witboost.plugin.informatica.marketplace.service;
 import com.witboost.plugin.informatica.common.exceptions.ApiCallException;
 import com.witboost.plugin.informatica.common.model.informatica.DataContract;
 import com.witboost.plugin.informatica.marketplace.model.DataCollection;
-import com.witboost.plugin.informatica.marketplace.service.client.CustomAttributeApiClient;
 import com.witboost.plugin.informatica.marketplace.service.client.DataCollectionApiClient;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -51,22 +50,18 @@ import org.springframework.stereotype.Component;
  * @since 1.0
  * @see DataContract
  * @see DataCollectionApiClient
- * @see CustomAttributeApiClient
  */
 @Component
 @Slf4j
 public class DataContractResolverService {
 
     private final DataCollectionApiClient dataCollectionApiClient;
-    private final CustomAttributeApiClient customAttributeApiClient;
     private final CategoryService categoryService;
 
     public DataContractResolverService(
             DataCollectionApiClient dataCollectionApiClient,
-            CustomAttributeApiClient customAttributeApiClient,
             CategoryService categoryService) {
         this.dataCollectionApiClient = dataCollectionApiClient;
-        this.customAttributeApiClient = customAttributeApiClient;
         this.categoryService = categoryService;
     }
 
@@ -102,46 +97,13 @@ public class DataContractResolverService {
             throw new ApiCallException("DataContract cannot be null");
         }
 
-        if (dataContract.getReferenceContext() == null) {
-            log.error("DataContract.referenceContext is null");
-            throw new ApiCallException("DataContract.referenceContext cannot be null");
-        }
+                var categoryPath = dataContract.getMarketplaceCategoryPath();
+                log.debug("Searching for collection in category path: {}", categoryPath);
 
-        // Extract context information
-        String company = dataContract.getReferenceContext().getCompany();
-        String domain = dataContract.getReferenceContext().getDomain();
-        String subdomain = dataContract.getReferenceContext().getSubdomain();
-
-        log.debug(
-                "Searching for collection: company='{}', domain='{}', subdomain='{}'",
-                company,
-                domain,
-                subdomain);
-
-        // Validate required fields
-        if (company == null || company.isBlank()) {
-            log.error("Company is required but not provided");
-            throw new ApiCallException("Company is required in referenceContext");
-        }
-        if (domain == null || domain.isBlank()) {
-            log.error("Domain is required but not provided");
-            throw new ApiCallException("Domain is required in referenceContext");
-        }
-        if (subdomain == null || subdomain.isBlank()) {
-            log.error("Subdomain is required but not provided");
-            throw new ApiCallException("Subdomain is required in referenceContext");
-        }
-
-        var dataProductCategory =
-                categoryService.getCategoryByCompanyDomainSubdomain(company, domain, subdomain);
+                var dataProductCategory = categoryService.getCategoryByPath(categoryPath);
         String categoryId = dataProductCategory.getId();
 
-        log.debug(
-                "Resolved category ID: {} for company='{}', domain='{}', subdomain='{}'",
-                categoryId,
-                company,
-                domain,
-                subdomain);
+                log.debug("Resolved category ID: {} for path {}", categoryId, categoryPath);
 
         String dataProductName = dataContract.getBaseCharacteristics().getName();
 
@@ -157,8 +119,8 @@ public class DataContractResolverService {
                     categoryId);
             throw new ApiCallException(
                     String.format(
-                            "Collection not found: name='%s', company='%s', domain='%s', subdomain='%s', categoryId='%s'",
-                            dataProductName, company, domain, subdomain, categoryId));
+                            "Collection not found: name='%s', categoryPath='%s', categoryId='%s'",
+                            dataProductName, categoryPath, categoryId));
         }
 
         log.debug(
@@ -179,12 +141,10 @@ public class DataContractResolverService {
                         .build();
 
         log.info(
-                "Populated identifier: {} for collection: {} (company: {}, domain: {}, subdomain: {})",
+                "Populated identifier: {} for collection: {} (category path: {})",
                 identifier,
                 dataProductName,
-                company,
-                domain,
-                subdomain);
+                categoryPath);
         return newDataContract;
     }
     //
@@ -317,42 +277,6 @@ public class DataContractResolverService {
     //        }
     //
     //        return dataContract;
-    //    }
-    //
-    //    /**
-    //     * Retrieves and caches all custom attributes for data collections.
-    //     *
-    //     * <p>This can be useful for bulk operations or validation.</p>
-    //     *
-    //     * @return List of custom attributes for data collections
-    //     */
-    //    public List<CustomAttributesResponse.CustomAttribute> getDataCollectionCustomAttributes()
-    // {
-    //        log.debug("Retrieving custom attributes for data collections");
-    //
-    //        CustomAttributesResponse response = customAttributeApiClient.getCustomAttributes(
-    //            CustomAttributesResponse.ClassType.DATA_COLLECTION,
-    //            0,
-    //            100
-    //        );
-    //
-    //        return response.getCustomAttributes();
-    //    }
-    //
-    //    /**
-    //     * Finds a custom attribute ID by its name.
-    //     *
-    //     * @param attributeName The name of the custom attribute to find
-    //     * @return Optional containing the attribute ID if found
-    //     */
-    //    public Optional<String> findCustomAttributeId(String attributeName) {
-    //        List<CustomAttributesResponse.CustomAttribute> attributes =
-    // getDataCollectionCustomAttributes();
-    //
-    //        return attributes.stream()
-    //            .filter(attr -> attributeName.equals(attr.getName()))
-    //            .map(CustomAttributesResponse.CustomAttribute::getId)
-    //            .findFirst();
     //    }
     //
     //    // Helper methods

@@ -1,0 +1,121 @@
+id: urn:dmb:dp:example-domain:example-data-product:0
+dataProductOwnerDisplayName: Guest Admin
+projectOwner: user:john.doe_example.com
+projectOwnerDisplayName: Guest Admin
+environment: production
+domain: example-domain
+domainId: urn:dmb:dmn:example-domain
+projectKind: system
+kind: dataproduct
+description: test
+devGroup: group:john.doe_example.com
+ownerGroup: guest_admin
+dataProductOwner: user:guest_admin
+email: john.doe@example.com
+name: witboost-dp
+version: 0.2.0-SNAPSHOT-3
+fullyQualifiedName: Example Domain - Example Data Product v0
+useCaseTemplateId: urn:dmb:utm:data-product-template:0.0.0
+infrastructureTemplateId: urn:dmb:itm:mock-provisioner:0
+tags: []
+specific: {}
+shoppable: false
+taxonomy:
+  id: urn:dmb:taxonomy:data-mesh-taxonomy
+  name: data-mesh-taxonomy
+components:
+  - kind: workload
+    id: urn:dmb:cmp:example-domain:example-data-product:0:composer
+    description: test dag
+    name: Composer
+    fullyQualifiedName: Example Domain - Example Data Product - Composer
+    version: 0.0.0
+    infrastructureTemplateId: urn:dmb:itm:google-composer-tech-adapter:0
+    useCaseTemplateId: urn:dmb:utm:google-composer-workload-template:0.0.0
+    dependsOn: []
+    platform: Google Cloud Composer
+    technology: Apache Airflow
+    tags: []
+    specific:
+      artifactName: anagrafica-sistemi-ai-act-dags
+      artifactVersion: 0.0.1
+    consumable: false
+    shoppable: false
+  - kind: outputport
+    id: urn:dmb:cmp:example-domain:example-data-product:0:customers
+    description: test
+    name: Customers
+    fullyQualifiedName: Example Domain - Example Data Product - Customers
+    version: 0.0.0
+    infrastructureTemplateId: urn:dmb:itm:mock-outputport-tech-adapter:0
+    useCaseTemplateId: urn:dmb:utm:bigquery-outputport-template:0.0.0
+    dependsOn: []
+    platform: BigQuery
+    technology: BigQuery
+    outputPortType: SQL
+    __dataContractEnabled: true
+    dataContract:
+      schema:
+        - name: customer_id
+          dataType: TEXT
+          description: Unique identifier for the record.
+          constraint: PRIMARY_KEY
+          quality:
+            - name: unique_customer_id
+              description: Checks that each identifier is unique.
+              rule: unique
+              engine: dbt
+            - name: not_null_customer_id
+              description: Checks that the identifier is present.
+              rule: not_null
+              engine: dbt
+        - name: email
+          dataType: TEXT
+          description: Email address associated with the record.
+          constraint: PRIMARY_KEY
+          quality:
+            - name: unique_email
+              description: Checks that each email address is unique.
+              rule: unique
+              engine: dbt
+            - name: not_null_email
+              description: Checks that the email address is present.
+              rule: not_null
+              engine: dbt
+        - name: signup_date
+          dataType: TEXT
+          description: Date associated with the record.
+          constraint: NOT_NULL
+          quality:
+            - name: not_null_signup_date
+              description: Checks that the date is present.
+              rule: not_null
+              engine: dbt
+        - name: country_code
+          dataType: TEXT
+          description: Two-letter country code associated with the record.
+          quality:
+            - name: accepted_values_country_code
+              description: Checks that the country code is one of the accepted values.
+              rule: accepted_values
+              engine: dbt
+              parameters:
+                values:
+                  - IT
+                  - FR
+                  - DE
+                  - ES
+                  - US
+      quality: []
+    dataSharingAgreement:
+      purpose: Foundational data for downstream use cases.
+      billing: None.
+      security: Platform standard security policies.
+      intendedUsage: Any downstream use case.
+      limitations: None.
+      lifeCycle: Data refreshed daily and typically never deleted.
+      confidentiality: None.
+    tags: []
+    specific: {}
+    consumable: true
+    shoppable: true

@@ -3,6 +3,7 @@ package com.witboost.plugin.informatica.marketplace.service;
 import com.witboost.plugin.informatica.common.exceptions.ApiCallException;
 import com.witboost.plugin.informatica.common.model.informatica.DataContract;
 import com.witboost.plugin.informatica.marketplace.common.Constants;
+import com.witboost.plugin.informatica.marketplace.mapper.MarketplaceAttributeMapper;
 import com.witboost.plugin.informatica.marketplace.mapper.datacontract.CreateCollectionMapper;
 import com.witboost.plugin.informatica.marketplace.model.UpdateDataCollectionRequest;
 import com.witboost.plugin.informatica.marketplace.service.client.DataCollectionApiClient;
@@ -19,7 +20,7 @@ public class DataCollectionService {
     private final CategoryService categoryService;
     private final DeliveryTargetService deliveryTargetService;
     private final DataAssetService dataAssetService;
-    private final CustomAttributeService customAttributeService;
+        private final MarketplaceAttributeMapper marketplaceAttributeMapper;
     private final CreateCollectionMapper createCollectionMapper;
     private final DataContractResolverService dataContractResolverService;
 
@@ -28,14 +29,14 @@ public class DataCollectionService {
             CategoryService categoryService,
             DeliveryTargetService deliveryTargetService,
             DataAssetService dataAssetService,
-            CustomAttributeService customAttributeService,
+            MarketplaceAttributeMapper marketplaceAttributeMapper,
             CreateCollectionMapper createCollectionMapper,
             DataContractResolverService dataContractResolverService) {
         this.dataCollectionApiClient = dataCollectionApiClient;
         this.categoryService = categoryService;
         this.deliveryTargetService = deliveryTargetService;
         this.dataAssetService = dataAssetService;
-        this.customAttributeService = customAttributeService;
+        this.marketplaceAttributeMapper = marketplaceAttributeMapper;
         this.createCollectionMapper = createCollectionMapper;
         this.dataContractResolverService = dataContractResolverService;
     }
@@ -51,35 +52,20 @@ public class DataCollectionService {
             String dataProductName = dataContract.getBaseCharacteristics().getName();
             log.debug("Creating collection for data product: {}", dataProductName);
 
-            // Extract context information
-            String company = dataContract.getReferenceContext().getCompany();
-            String domain = dataContract.getReferenceContext().getDomain();
-            String subDomain = dataContract.getReferenceContext().getSubdomain();
-            log.debug("Context: company={}, domain={}, subdomain={}", company, domain, subDomain);
-
-            // Retrieve category by company, domain, and subdomain
-            log.debug(
-                    "Retrieving category for: company={}, domain={}, subdomain={}",
-                    company,
-                    domain,
-                    subDomain);
+            List<String> categoryPath = dataContract.getMarketplaceCategoryPath();
+            log.debug("Retrieving Marketplace category path: {}", categoryPath);
             var dataProductCategory =
-                    categoryService.getCategoryByCompanyDomainSubdomain(company, domain, subDomain);
+                    categoryService.getCategoryByPath(categoryPath);
             log.info(
                     "Category resolved: ID={}, name={}",
                     dataProductCategory.getId(),
                     dataProductCategory.getName());
 
-            // Get custom attributes map from Informatica
-            log.debug("Retrieving custom attributes map from Informatica");
-            var customAttributesName2Id =
-                    customAttributeService.getDataCollectionCustomAttributesNameId();
-
             // Map DataContract to CreateDataCollectionRequest
             log.debug("Mapping DataContract to CreateDataCollectionRequest");
             var createCollectionRequest =
                     createCollectionMapper.mapToCreateDataCollectionRequest(
-                            dataContract, dataProductCategory.getId(), customAttributesName2Id);
+                            dataContract, dataProductCategory.getId());
             log.debug(
                     "Mapped request: name={}, categoryId={}, status={}, customAttributes count={}",
                     createCollectionRequest.getName(),
@@ -171,13 +157,7 @@ public class DataCollectionService {
     private UpdateDataCollectionRequest getUpdateCustomAttributeReq(DataContract dataContract) {
         log.debug("Building custom attributes update request");
 
-        // Get the map of custom attribute names -> IDs from Informatica
-        Map<String, String> customAttributesMap =
-                customAttributeService.getDataCollectionCustomAttributesNameId();
-
-        // Get the map of custom attribute IDs -> values from the DataContract instance
-        Map<String, Object> customAttributeValuesMap =
-                dataContract.getCustomAttributeValues(customAttributesMap);
+        Map<String, Object> customAttributeValuesMap = marketplaceAttributeMapper.map(dataContract);
 
         // Convert to list of CustomAttribute objects
         List<UpdateDataCollectionRequest.CustomAttribute> customAttributes =

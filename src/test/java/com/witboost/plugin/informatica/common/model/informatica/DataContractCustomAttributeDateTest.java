@@ -9,17 +9,13 @@ import org.junit.jupiter.api.Test;
 class DataContractCustomAttributeDateTest {
 
     @Test
-    void descriptorCustomAttributesAreMappedByConfiguredName() {
-        Map<String, String> attributeIds =
-                Map.of("businessOwner", "id-owner", "qualityScore", "id-quality");
-
+    void descriptorCustomAttributesAreKeyedByTechnicalId() {
         DataContract dataContract =
                 DataContract.builder()
-                        .customAttributes(
-                                Map.of("businessOwner", "Example Owner", "qualityScore", 99))
+                        .customAttributes(Map.of("id-owner", "Example Owner", "id-quality", 99))
                         .build();
 
-        Map<String, Object> values = dataContract.getCustomAttributeValues(attributeIds);
+        Map<String, Object> values = dataContract.getCustomAttributes();
 
         assertEquals("Example Owner", values.get("id-owner"));
         assertEquals(99, values.get("id-quality"));

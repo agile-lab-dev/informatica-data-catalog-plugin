@@ -30,16 +30,15 @@ informatica:
   marketplace:
     mapping:
       categories:
-        - descriptor-path: company
-        - descriptor-path: businessDomain
-        - descriptor-path: businessSubdomain
+        - descriptor-path: specific.company
+        - descriptor-path: specific.businessDomain
+        - descriptor-path: specific.businessSubdomain
       custom-attributes: {}
     api:
       base-url: ${INFORMATICA_MP_BASE_URL:http://localhost:18081/marketplace}
       wrapper-base-url: ${INFORMATICA_MP_WRAPPER_BASE_URL:http://localhost:18082}
       endpoints:
         data-collections: /api/v2/data-collections
-        custom-attributes: /api/v1/integration/model/customAttributes
         categories: /api/v2/categories
         delivery-targets: /api/v2/delivery-targets
         delivery-templates: /api/v1/integration/provisioning/deliveryTemplates
