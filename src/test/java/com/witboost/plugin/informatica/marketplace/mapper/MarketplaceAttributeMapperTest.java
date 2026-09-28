@@ -16,13 +16,12 @@ class MarketplaceAttributeMapperTest {
         MarketplaceMappingProperties.AttributeMapping mapping =
                 new MarketplaceMappingProperties.AttributeMapping();
         mapping.setDescriptorPath("specific.owner");
-        properties.setCustomAttributes(
-                Map.of("com.infa.odin.models.custom.ca_owner", mapping));
+        properties.setCustomAttributes(Map.of("com.infa.odin.models.custom.ca_owner", mapping));
 
         MarketplaceAttributeMapper mapper = new MarketplaceAttributeMapper(properties, List.of());
         DataContract contract = new DataContract();
         contract.setCustomAttributes(
-            Map.of("com.infa.odin.models.custom.ca_owner", "Example Owner"));
+                Map.of("com.infa.odin.models.custom.ca_owner", "Example Owner"));
 
         Map<String, Object> result = mapper.map(contract);
 

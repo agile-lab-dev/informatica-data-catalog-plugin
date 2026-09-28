@@ -47,8 +47,8 @@ public abstract class CreateCollectionMapper {
             DataContract dataContract, String categoryId);
 
     /**
-     * Custom method to convert DataContract to CustomAttribute list. Uses context-passed
-        * ID-keyed custom attributes already extracted from the descriptor.
+     * Custom method to convert DataContract to CustomAttribute list. Uses context-passed ID-keyed
+     * custom attributes already extracted from the descriptor.
      *
      * @param dataContract The source DataContract object (must not have null info)
      * @return A list of mapped CustomAttribute objects

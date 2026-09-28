@@ -14,7 +14,7 @@ class CreateCollectionMapperTest {
     private final CreateCollectionMapper mapper = Mappers.getMapper(CreateCollectionMapper.class);
 
     @Test
-        void mapsDescriptorCustomAttributesUsingTechnicalIdKeys() {
+    void mapsDescriptorCustomAttributesUsingTechnicalIdKeys() {
         DataContract contract = new DataContract();
         contract.getBaseCharacteristics().setName("Example Collection");
         contract.getBaseCharacteristics().setDescription("Example description");

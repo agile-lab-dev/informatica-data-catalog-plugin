@@ -15,9 +15,7 @@ class DescriptorPathResolverTest {
     void resolvesPathRelativeToSuppliedNode() throws Exception {
         var root = objectMapper.readTree("{\"specific\":{\"owner\":\"Example Owner\"}}");
 
-        assertEquals(
-                "Example Owner",
-                DescriptorPathResolver.read(root, "specific.owner").asText());
+        assertEquals("Example Owner", DescriptorPathResolver.read(root, "specific.owner").asText());
         assertNull(DescriptorPathResolver.read(root.get("specific"), "specific.owner"));
     }
 

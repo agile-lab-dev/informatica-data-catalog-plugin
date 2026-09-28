@@ -57,7 +57,7 @@ class CategoryServiceTest {
                         IllegalArgumentException.class,
                         () ->
                                 categoryService.getCategoryByPath(
-                                    List.of(COMPANY, "Cliente", SUBDOMAIN)));
+                                        List.of(COMPANY, "Cliente", SUBDOMAIN)));
 
         // The accepted value must appear as a single quoted token, not split on its internal comma.
         assertTrue(

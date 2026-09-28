@@ -20,7 +20,7 @@ public class DataCollectionService {
     private final CategoryService categoryService;
     private final DeliveryTargetService deliveryTargetService;
     private final DataAssetService dataAssetService;
-        private final MarketplaceAttributeMapper marketplaceAttributeMapper;
+    private final MarketplaceAttributeMapper marketplaceAttributeMapper;
     private final CreateCollectionMapper createCollectionMapper;
     private final DataContractResolverService dataContractResolverService;
 
@@ -54,8 +54,7 @@ public class DataCollectionService {
 
             List<String> categoryPath = dataContract.getMarketplaceCategoryPath();
             log.debug("Retrieving Marketplace category path: {}", categoryPath);
-            var dataProductCategory =
-                    categoryService.getCategoryByPath(categoryPath);
+            var dataProductCategory = categoryService.getCategoryByPath(categoryPath);
             log.info(
                     "Category resolved: ID={}, name={}",
                     dataProductCategory.getId(),

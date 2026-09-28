@@ -29,18 +29,18 @@ public class CategoryService {
 
     public Category getCategoryByPath(List<String> categoryNames) {
         var items = categoryApiClient.getAllCategories("*", "all").getItems();
-                if (categoryNames == null
-                                || categoryNames.size() != mappingProperties.getCategories().size()) {
+        if (categoryNames == null
+                || categoryNames.size() != mappingProperties.getCategories().size()) {
             throw new IllegalArgumentException(
-                                        "Descriptor category path must contain exactly "
-                                                        + mappingProperties.getCategories().size()
-                                                        + " configured levels");
-                }
-                for (int level = 0; level < categoryNames.size(); level++) {
-                        if (categoryNames.get(level) == null || categoryNames.get(level).isBlank()) {
-                                throw new IllegalArgumentException(
-                                                "Descriptor category value is missing at configured level " + level);
-                        }
+                    "Descriptor category path must contain exactly "
+                            + mappingProperties.getCategories().size()
+                            + " configured levels");
+        }
+        for (int level = 0; level < categoryNames.size(); level++) {
+            if (categoryNames.get(level) == null || categoryNames.get(level).isBlank()) {
+                throw new IllegalArgumentException(
+                        "Descriptor category value is missing at configured level " + level);
+            }
         }
 
         var companyCategory =

@@ -181,7 +181,7 @@ class DataCollectionServiceIntegrationTest {
     /**
      * Integration Test: Verify custom attribute values mapping
      *
-        * <p>This test verifies that custom attributes are already keyed by Informatica technical ID.
+     * <p>This test verifies that custom attributes are already keyed by Informatica technical ID.
      */
     @Test
     void testGetCustomAttributeValues_WithCompleteDataContract_ShouldReturnCorrectMapping() {

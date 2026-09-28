@@ -58,9 +58,7 @@ class DataContractMapperTest {
 
         DataContract result = mapper.toDataContract(dataProduct);
 
-        assertEquals(
-                List.of("Example Organization", "Sales"),
-                result.getMarketplaceCategoryPath());
+        assertEquals(List.of("Example Organization", "Sales"), result.getMarketplaceCategoryPath());
         assertEquals("Example Owner", result.getCustomAttributes().get("attribute-owner"));
         assertEquals(99, result.getCustomAttributes().get("attribute-score"));
     }

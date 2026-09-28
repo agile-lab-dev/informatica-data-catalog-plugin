@@ -59,8 +59,7 @@ public class DataContractResolverService {
     private final CategoryService categoryService;
 
     public DataContractResolverService(
-            DataCollectionApiClient dataCollectionApiClient,
-            CategoryService categoryService) {
+            DataCollectionApiClient dataCollectionApiClient, CategoryService categoryService) {
         this.dataCollectionApiClient = dataCollectionApiClient;
         this.categoryService = categoryService;
     }
@@ -97,13 +96,13 @@ public class DataContractResolverService {
             throw new ApiCallException("DataContract cannot be null");
         }
 
-                var categoryPath = dataContract.getMarketplaceCategoryPath();
-                log.debug("Searching for collection in category path: {}", categoryPath);
+        var categoryPath = dataContract.getMarketplaceCategoryPath();
+        log.debug("Searching for collection in category path: {}", categoryPath);
 
-                var dataProductCategory = categoryService.getCategoryByPath(categoryPath);
+        var dataProductCategory = categoryService.getCategoryByPath(categoryPath);
         String categoryId = dataProductCategory.getId();
 
-                log.debug("Resolved category ID: {} for path {}", categoryId, categoryPath);
+        log.debug("Resolved category ID: {} for path {}", categoryId, categoryPath);
 
         String dataProductName = dataContract.getBaseCharacteristics().getName();
 

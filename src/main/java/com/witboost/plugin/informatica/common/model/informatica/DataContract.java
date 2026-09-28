@@ -585,5 +585,4 @@ public class DataContract {
         /** Contact address */
         private String address;
     }
-
 }

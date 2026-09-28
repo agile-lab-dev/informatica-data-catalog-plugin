@@ -33,7 +33,7 @@ class DataCollectionServiceTest {
 
     @Mock private CategoryService categoryService;
 
-        @Mock private MarketplaceAttributeMapper marketplaceAttributeMapper;
+    @Mock private MarketplaceAttributeMapper marketplaceAttributeMapper;
 
     @Mock private CreateCollectionMapper createCollectionMapper;
 
@@ -78,10 +78,9 @@ class DataCollectionServiceTest {
      * Test: Verify that createCollection successfully creates a collection
      *
      * <p>This test verifies the complete flow: 1. CategoryService is called to get the category by
-        * configured path 2. CreateCollectionMapper is used to map DataContract to
-        * CreateDataCollectionRequest 3.
-     * DataCollectionApiClient.createCollection is called with the mapped request 5. The method
-     * returns true on success
+     * configured path 2. CreateCollectionMapper is used to map DataContract to
+     * CreateDataCollectionRequest 3. DataCollectionApiClient.createCollection is called with the
+     * mapped request 5. The method returns true on success
      */
     @Test
     void testCreateCollection_WithValidDataContract_ShouldReturnTrue() {
@@ -90,12 +89,10 @@ class DataCollectionServiceTest {
 
         // Setup mocks for the service dependencies
         Category mockCategory = createMockCategory("category-123");
-        when(categoryService.getCategoryByPath(List.of("TestDomain")))
-                .thenReturn(mockCategory);
+        when(categoryService.getCategoryByPath(List.of("TestDomain"))).thenReturn(mockCategory);
 
         CreateDataCollectionRequest mockRequest = createMockCreateDataCollectionRequest();
-        when(createCollectionMapper.mapToCreateDataCollectionRequest(
-                        dataContract, "category-123"))
+        when(createCollectionMapper.mapToCreateDataCollectionRequest(dataContract, "category-123"))
                 .thenReturn(mockRequest);
 
         CreateDataCollectionResponse mockResponse = new CreateDataCollectionResponse();
@@ -127,12 +124,10 @@ class DataCollectionServiceTest {
         DataContract dataContract = createSampleDataContract();
 
         Category mockCategory = createMockCategory("category-123");
-        when(categoryService.getCategoryByPath(List.of("TestDomain")))
-                .thenReturn(mockCategory);
+        when(categoryService.getCategoryByPath(List.of("TestDomain"))).thenReturn(mockCategory);
 
         CreateDataCollectionRequest mockRequest = createMockCreateDataCollectionRequest();
-        when(createCollectionMapper.mapToCreateDataCollectionRequest(
-                        dataContract, "category-123"))
+        when(createCollectionMapper.mapToCreateDataCollectionRequest(dataContract, "category-123"))
                 .thenReturn(mockRequest);
 
         // Simulate API failure

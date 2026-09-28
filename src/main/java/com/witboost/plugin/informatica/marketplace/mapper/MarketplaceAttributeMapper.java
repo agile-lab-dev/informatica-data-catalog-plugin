@@ -27,25 +27,25 @@ public class MarketplaceAttributeMapper {
                                         DescriptorValueTransformer::name, t -> t));
     }
 
-        public Map<String, Object> map(DataContract dataContract) {
-                Map<String, Object> result = new LinkedHashMap<>();
+    public Map<String, Object> map(DataContract dataContract) {
+        Map<String, Object> result = new LinkedHashMap<>();
         properties
                 .getCustomAttributes()
                 .forEach(
-                                                (attributeId, mapping) -> {
-                                                        Object value = dataContract.getCustomAttributes().get(attributeId);
+                        (attributeId, mapping) -> {
+                            Object value = dataContract.getCustomAttributes().get(attributeId);
                             if (value == null) value = mapping.getDefaultValue();
                             if (mapping.isRequired() && value == null) {
                                 throw new IllegalArgumentException(
-                                                                                "Required Marketplace attribute is missing: "
-                                                                                                + attributeId
-                                                                                                + " (descriptor path: "
-                                                                                                + mapping.getDescriptorPath()
-                                                                                                + ")");
+                                        "Required Marketplace attribute is missing: "
+                                                + attributeId
+                                                + " (descriptor path: "
+                                                + mapping.getDescriptorPath()
+                                                + ")");
                             }
-                                                        if (value != null) {
-                                                                result.put(attributeId, transform(attributeId, value));
-                                                        }
+                            if (value != null) {
+                                result.put(attributeId, transform(attributeId, value));
+                            }
                         });
         return result;
     }
@@ -55,7 +55,8 @@ public class MarketplaceAttributeMapper {
                 properties.getCustomAttributes().get(name);
         if (mapping == null || mapping.getTransformer() == null) return value;
         DescriptorValueTransformer transformer = transformers.get(mapping.getTransformer());
-        if (transformer == null) return unknownTransformer(mapping.getTransformer()).transform(value);
+        if (transformer == null)
+            return unknownTransformer(mapping.getTransformer()).transform(value);
         return transformer.transform(value);
     }
 
