@@ -195,7 +195,7 @@ class DeliveryTargetMapperTest {
                         .portTechnology("Snowflake")
                         .description("Output port for Snowflake containing 2 data assets")
                         .version("1.0.0")
-                        .creationDate(null)
+                        .creationDate("2026-01-01")
                         .isPii(false)
                         .modificationDate("2026-01-15")
                         .qualityExpectations("Completeness above 99%")
