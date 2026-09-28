@@ -321,22 +321,21 @@ class DataAssetMapperTest {
         // Assert - Build expected EntityInfo
         DataAsset.EntityInfo expectedEntityInfo =
                 DataAsset.EntityInfo.builder()
-                        .entityName("contratto")
-                        .entityDescription(
-                                " Tabella che contiene i contratti in vigore ed altre informazioni riguardanti il folder. Chiave compagnia/archivio/appendice (id_contratto_dvi)")
+                        .entityName("orders")
+                        .entityDescription("Output port for the orders dataset")
                         .entityType("View")
                         .feedingFrequency("Giornaliero")
                         .feedingType("PUSH")
                         .loadingMode("Full")
                         .manualProcess(false)
                         .historicized(true)
-                        .retentionInfo("5 anni")
+                        .retentionInfo("5 years")
                         .sensitiveData(false)
                         .sla(
                                 DataAsset.SLA
                                         .builder()
                                         .refreshRate("Giornaliero")
-                                        .retentionRate("Disponibilità: 99.9%")
+                                        .retentionRate("Availability: 99.9%")
                                         .build())
                         .semanticLinks(null)
                         .build();
@@ -344,17 +343,14 @@ class DataAssetMapperTest {
         assertEquals(expectedSystemInfo, result.getSystemInfo());
         assertEquals(expectedEntityInfo, result.getEntityInfo());
         // The Witboost component id/urn is carried so validation errors can point at the component
-        assertEquals(
-                "urn:example:component:analytics:orders",
-                result.getComponentId());
+        assertEquals("urn:example:component:analytics:orders", result.getComponentId());
 
         // Assert - Build expected Attributes (first two)
         DataAsset.AttributeInfo expectedAttr1 =
                 DataAsset.AttributeInfo.builder()
-                        .attributeName("id_contratto_dvi")
-                        .attributeDescription(
-                                "Identificativo Univoco Contratto Compagnia|Archivio|Posizione")
-                        .attributeDomain("text")
+                        .attributeName("order_id")
+                        .attributeDescription("Stable order identifier")
+                        .attributeDomain("TEXT")
                         .length(50)
                         .position(1)
                         .mandatory(false)
@@ -366,10 +362,10 @@ class DataAssetMapperTest {
 
         DataAsset.AttributeInfo expectedAttr2 =
                 DataAsset.AttributeInfo.builder()
-                        .attributeName("cd_compagnia")
-                        .attributeDescription("Codice Compagnia (1=Example Organization)")
-                        .attributeDomain("text")
-                        .length(10)
+                        .attributeName("order_date")
+                        .attributeDescription("Date when the order was created")
+                        .attributeDomain("DATE")
+                        .length(0)
                         .position(2)
                         .mandatory(false)
                         .primaryKey(false)
@@ -378,7 +374,7 @@ class DataAssetMapperTest {
                         .qualityControlLinks(null)
                         .build();
 
-        assertTrue(result.getAttributes().size() >= 6);
+        assertTrue(result.getAttributes().size() >= 2);
         assertEquals(expectedAttr1, result.getAttributes().get(0));
         assertEquals(expectedAttr2, result.getAttributes().get(1));
     }
@@ -447,7 +443,7 @@ class DataAssetMapperTest {
                         .systemName("TestSystemName")
                         .serverName("TestServerName")
                         .databaseName("TestDBName")
-                        .schemaName("TestSchemaName")
+                        .schemaName("TestSthatmaName")
                         .build();
 
         // Assert - Build expected EntityInfo

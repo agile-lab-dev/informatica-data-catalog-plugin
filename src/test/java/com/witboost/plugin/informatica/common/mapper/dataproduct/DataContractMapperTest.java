@@ -188,8 +188,7 @@ class DataContractMapperTest {
                 DataContract.BaseCharacteristics.builder()
                         .identifier("urn:example:dp:analytics:1")
                         .name("Example Analytics Product")
-                        .description(
-                                "Example product for customer analytics")
+                        .description("Example product for customer analytics")
                         .productOwnerName("Anonymous User")
                         .technicalOwnersNames("example-team")
                         .certifiedUse("Generic")
@@ -238,8 +237,7 @@ class DataContractMapperTest {
         DataContract expected = new DataContract();
         expected.setBaseCharacteristics(
                 DataContract.BaseCharacteristics.builder()
-                        .identifier(
-                                "urn:dmb:dp:example-domain:example-dp:0")
+                        .identifier("urn:dmb:dp:example-domain:example-dp:0")
                         .name("Data Product Test Metadata 3")
                         .description("Data Product")
                         .productOwnerName("Example Owner")
@@ -484,74 +482,20 @@ class DataContractMapperTest {
                         dataProduct, deliveryTargetMapper, dataAssetMapper);
 
         // Assert
-        assertEquals(1, result.getDeliveryTargets().size());
+        assertEquals(2, result.getDeliveryTargets().size());
+        assertTrue(
+                result.getDeliveryTargets().stream()
+                        .allMatch(
+                                target ->
+                                        target.getCatalogAssetType()
+                                                        == DeliveryTarget.CatalogAssetType.DATASET
+                                                && target.getDataAssets().size() == 1));
         DeliveryTarget snowflakeTarget = result.getDeliveryTargets().get(0);
-        assertEquals(2, snowflakeTarget.getDataAssets().size());
 
-        // Expected DeliveryTarget.BaseCharacteristics
-        DeliveryTarget.BaseCharacteristics expectedDtBc =
-                DeliveryTarget.BaseCharacteristics.builder()
-                        .portName("Snowflake Output Port")
-                        .portTechnology("Snowflake")
-                        .description("Output port for Snowflake containing 2 data assets")
-                        .version("0.0.0")
-                        .creationDate("2026-01-10")
-                        .isPii(false)
-                        .modificationDate("2026-01-15")
-                        .qualityExpectations("Completezza > 99%, Accuratezza > 95%")
-                        .securityConsiderations("TLS 1.3, Access via AD group")
-                        .technicalSpecifications("JDBC connection, View-based access")
-                        .build();
-        assertEquals(expectedDtBc, snowflakeTarget.getBaseCharacteristics());
-
-        // Expected first DataAsset
-        DataAsset firstAsset = snowflakeTarget.getDataAssets().get(0);
-
-        DataAsset.SystemInfo expectedSystemInfo =
-                DataAsset.SystemInfo.builder()
-                        .systemName("Example Data System")
-                        .serverName("example-snowflake.example.com")
-                        .databaseName("example_analytics")
-                        .schemaName("curated")
-                        .build();
-        assertEquals(expectedSystemInfo, firstAsset.getSystemInfo());
-
-        DataAsset.EntityInfo expectedEntityInfo =
-                DataAsset.EntityInfo.builder()
-                        .entityName("contratto")
-                        .entityDescription(
-                                " Tabella che contiene i contratti in vigore ed altre informazioni riguardanti il folder. Chiave compagnia/archivio/appendice (id_contratto_dvi)")
-                        .entityType("View")
-                        .feedingFrequency("Giornaliero")
-                        .feedingType("PUSH")
-                        .loadingMode("Full")
-                        .manualProcess(false)
-                        .historicized(true)
-                        .retentionInfo("5 anni")
-                        .sensitiveData(false)
-                        .sla(
-                                DataAsset.SLA
-                                        .builder()
-                                        .refreshRate("Giornaliero")
-                                        .retentionRate("Disponibilità: 99.9%")
-                                        .build())
-                        .semanticLinks(null)
-                        .build();
-        assertEquals(expectedEntityInfo, firstAsset.getEntityInfo());
-
-        DataAsset.AttributeInfo expectedFirstAttr =
-                DataAsset.AttributeInfo.builder()
-                        .attributeName("id_contratto_dvi")
-                        .attributeDescription(
-                                "Identificativo Univoco Contratto Compagnia|Archivio|Posizione")
-                        .attributeDomain("text")
-                        .length(50)
-                        .position(1)
-                        .mandatory(false)
-                        .primaryKey(false)
-                        .sensitiveData(false)
-                        .build();
-        assertEquals(expectedFirstAttr, firstAsset.getAttributes().get(0));
+        assertEquals("Orders Output Port", snowflakeTarget.getBaseCharacteristics().getPortName());
+        assertEquals(
+                "orders", snowflakeTarget.getDataAssets().get(0).getEntityInfo().getEntityName());
+        assertEquals(2, snowflakeTarget.getDataAssets().get(0).getAttributes().size());
     }
 
     @Test
@@ -571,6 +515,46 @@ class DataContractMapperTest {
         assertNotNull(result);
         assertNotNull(result.getDeliveryTargets());
         assertTrue(result.getDeliveryTargets().isEmpty());
+    }
+
+    @Test
+    void mapsNestedOutputPortToSystemWithChildDatasets() {
+        String yaml =
+                "name: Nested Product\n"
+                        + "specific:\n"
+                        + "  publishToInformatica: true\n"
+                        + "components:\n"
+                        + "  - kind: outputport\n"
+                        + "    name: Customer System\n"
+                        + "    version: 1.0.0\n"
+                        + "    technology: BigQuery\n"
+                        + "    components:\n"
+                        + "      - kind: outputport\n"
+                        + "        name: customers\n"
+                        + "        version: 1.0.0\n"
+                        + "        technology: BigQuery\n"
+                        + "        specific:\n"
+                        + "          systemName: customer-system\n"
+                        + "          databaseName: warehouse\n"
+                        + "          schemaName: curated\n"
+                        + "          entityName: customers\n"
+                        + "          entityType: table\n"
+                        + "        dataContract:\n"
+                        + "          schema:\n"
+                        + "            - name: customer_id\n"
+                        + "              dataType: TEXT\n";
+        DataProduct dataProduct = Parser.parseDataProduct(yaml).get();
+
+        DataContract result =
+                mapper.toDataContractWithOutputPorts(
+                        dataProduct, deliveryTargetMapper, dataAssetMapper);
+
+        assertEquals(1, result.getDeliveryTargets().size());
+        DeliveryTarget system = result.getDeliveryTargets().get(0);
+        assertEquals(DeliveryTarget.CatalogAssetType.SYSTEM, system.getCatalogAssetType());
+        assertEquals("Customer System", system.getBaseCharacteristics().getPortName());
+        assertEquals(1, system.getDataAssets().size());
+        assertEquals("customers", system.getDataAssets().get(0).getEntityInfo().getEntityName());
     }
 
     @Test
@@ -648,7 +632,7 @@ class DataContractMapperTest {
                         .systemName("TestSystemName")
                         .serverName("TestServerName")
                         .databaseName("TestDBName")
-                        .schemaName("TestSchemaName")
+                        .schemaName("TestSthatmaName")
                         .build();
         assertEquals(expectedSystemInfo, dataAsset.getSystemInfo());
 

@@ -4,6 +4,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.witboost.plugin.informatica.common.model.informatica.DataAsset;
 import com.witboost.plugin.informatica.common.model.informatica.DeliveryTarget;
 import com.witboost.plugin.informatica.common.model.witboost.OutputPort;
+import com.witboost.plugin.informatica.common.model.witboost.Specific;
+import com.witboost.plugin.informatica.common.parser.Parser;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -48,6 +50,103 @@ public interface DeliveryTargetMapper {
             qualifiedByName = "extractCreationDate")
     @Mapping(target = "dataAssets", ignore = true)
     DeliveryTarget toOutputPort(OutputPort<?> witboostOutputPort);
+
+    /** Maps each descriptor output port independently, preserving its identity and shape. */
+    default List<DeliveryTarget> toOutputPortsIndividually(
+            List<? extends OutputPort<?>> witboostOutputPorts, DataAssetMapper dataAssetMapper) {
+        if (witboostOutputPorts == null || witboostOutputPorts.isEmpty()) {
+            return List.of();
+        }
+        return witboostOutputPorts.stream()
+                .map(
+                        outputPort -> {
+                            DeliveryTarget target = toOutputPort(outputPort);
+                            boolean hasChildren =
+                                    outputPort.getRawComponent() != null
+                                            && outputPort
+                                                    .getRawComponent()
+                                                    .path("components")
+                                                    .isArray()
+                                            && outputPort
+                                                            .getRawComponent()
+                                                            .path("components")
+                                                            .size()
+                                                    > 0;
+                            List<DataAsset> dataAssets =
+                                    hasChildren
+                                            ? childDataAssets(outputPort, dataAssetMapper)
+                                            : List.of(dataAssetMapper.toDataAsset(outputPort));
+                            target.setDataAssets(dataAssets);
+                            JsonNode rawComponent = outputPort.getRawComponent();
+                            target.setShoppable(
+                                    rawComponent == null
+                                            || rawComponent.path("shoppable").asBoolean(true));
+                            target.setConsumable(
+                                    rawComponent != null
+                                            && rawComponent.path("consumable").asBoolean(false));
+                            target.setCatalogAssetType(
+                                    hasChildren
+                                            ? DeliveryTarget.CatalogAssetType.SYSTEM
+                                            : DeliveryTarget.CatalogAssetType.DATASET);
+                            return target;
+                        })
+                .toList();
+    }
+
+    /** Builds Marketplace offers independently for nested parents and child datasets. */
+    default List<DeliveryTarget> toMarketplaceTargets(
+            List<? extends OutputPort<?>> witboostOutputPorts, DataAssetMapper dataAssetMapper) {
+        if (witboostOutputPorts == null || witboostOutputPorts.isEmpty()) return List.of();
+        List<DeliveryTarget> result = new ArrayList<>();
+        for (OutputPort<?> outputPort : witboostOutputPorts) {
+            List<? extends OutputPort<?>> children = childOutputPorts(outputPort);
+            if (children.isEmpty()) {
+                result.add(toMarketplaceTarget(outputPort, dataAssetMapper));
+            } else {
+                DeliveryTarget parent = toOutputPort(outputPort);
+                parent.setCatalogAssetType(DeliveryTarget.CatalogAssetType.SYSTEM);
+                setMarketplaceFlags(parent, outputPort.getRawComponent());
+                result.add(parent);
+                children.forEach(child -> result.add(toMarketplaceTarget(child, dataAssetMapper)));
+            }
+        }
+        return result;
+    }
+
+    private DeliveryTarget toMarketplaceTarget(
+            OutputPort<?> outputPort, DataAssetMapper dataAssetMapper) {
+        DeliveryTarget target = toOutputPort(outputPort);
+        target.setDataAssets(List.of(dataAssetMapper.toDataAsset(outputPort)));
+        target.setCatalogAssetType(DeliveryTarget.CatalogAssetType.DATASET);
+        setMarketplaceFlags(target, outputPort.getRawComponent());
+        return target;
+    }
+
+    private void setMarketplaceFlags(DeliveryTarget target, JsonNode rawComponent) {
+        target.setShoppable(rawComponent == null || rawComponent.path("shoppable").asBoolean(true));
+        target.setConsumable(
+                rawComponent != null && rawComponent.path("consumable").asBoolean(false));
+    }
+
+    private List<DataAsset> childDataAssets(
+            OutputPort<?> outputPort, DataAssetMapper dataAssetMapper) {
+        return childOutputPorts(outputPort).stream().map(dataAssetMapper::toDataAsset).toList();
+    }
+
+    private List<? extends OutputPort<?>> childOutputPorts(OutputPort<?> outputPort) {
+        if (outputPort.getRawComponent() == null
+                || !outputPort.getRawComponent().path("components").isArray()) {
+            return List.of();
+        }
+        return java.util.stream.StreamSupport.stream(
+                        outputPort.getRawComponent().path("components").spliterator(), false)
+                .filter(child -> "outputport".equals(child.path("kind").asText()))
+                .map(child -> Parser.parseComponent(child, Specific.class))
+                .filter(io.vavr.control.Either::isRight)
+                .map(io.vavr.control.Either::get)
+                .map(component -> (OutputPort<?>) component)
+                .toList();
+    }
 
     /**
      * Converts a list of Witboost OutputPorts to a list of Informatica OutputPorts, grouped by

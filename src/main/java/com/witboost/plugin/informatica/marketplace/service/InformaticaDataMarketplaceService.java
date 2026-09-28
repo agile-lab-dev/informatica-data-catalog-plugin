@@ -2,6 +2,7 @@ package com.witboost.plugin.informatica.marketplace.service;
 
 import com.witboost.plugin.informatica.common.mapper.naming.NameBuilder;
 import com.witboost.plugin.informatica.common.model.informatica.DataContract;
+import com.witboost.plugin.informatica.common.model.informatica.DeliveryTarget;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
@@ -90,8 +91,8 @@ public class InformaticaDataMarketplaceService {
                     "Step 2/3: Creating {} delivery target(s)...",
                     dataContract.getDeliveryTargets().size());
 
-            dataContract
-                    .getDeliveryTargets()
+            dataContract.getMarketplaceDeliveryTargets().stream()
+                    .filter(DeliveryTarget::isShoppable)
                     .forEach(
                             dt -> {
                                 try {
@@ -163,7 +164,8 @@ public class InformaticaDataMarketplaceService {
         // collection ID
         log.debug("Deleting delivery targets for collection '{}'...", dataProductName);
         var deliveryTargetNames =
-                dataContract.getDeliveryTargets().stream()
+                dataContract.getMarketplaceDeliveryTargets().stream()
+                        .filter(DeliveryTarget::isShoppable)
                         .map(dt -> NameBuilder.getDataMarketplaceOutputPortName(dataContract, dt))
                         .toList();
 

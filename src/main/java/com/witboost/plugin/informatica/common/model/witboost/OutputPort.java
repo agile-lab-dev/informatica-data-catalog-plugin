@@ -34,6 +34,9 @@ public class OutputPort<T> extends Component<T> {
     @Override
     public void setRawComponent(JsonNode rawComponent) {
         super.setRawComponent(rawComponent);
+        if (this.dataContract == null) {
+            this.dataContract = new DataContract();
+        }
         this.dataContract.setRawDataContract(rawComponent.get("dataContract"));
     }
 }

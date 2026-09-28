@@ -83,9 +83,10 @@ public interface DataContractMapper {
         if (witboostOutputPorts != null && !witboostOutputPorts.isEmpty()) {
             List<OutputPort<?>> castedList = new java.util.ArrayList<>(witboostOutputPorts);
             List<DeliveryTarget> informaticaDeliveryTargets =
-                    deliveryTargetMapper.toOutputPortsGroupedByTechnology(
-                            castedList, dataAssetMapper);
+                    deliveryTargetMapper.toOutputPortsIndividually(castedList, dataAssetMapper);
             dataContract.setDeliveryTargets(informaticaDeliveryTargets);
+            dataContract.setMarketplaceDeliveryTargets(
+                    deliveryTargetMapper.toMarketplaceTargets(castedList, dataAssetMapper));
         }
 
         return dataContract;

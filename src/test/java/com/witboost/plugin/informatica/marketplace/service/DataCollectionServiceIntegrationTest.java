@@ -229,7 +229,8 @@ class DataCollectionServiceIntegrationTest {
 
         // Verify values are correct
         assertEquals(
-                "Example Owner", customAttributeValues.get(customAttributesMap.get("Product Owner")));
+                "Example Owner",
+                customAttributeValues.get(customAttributesMap.get("Product Owner")));
         assertEquals("2.1.0", customAttributeValues.get(customAttributesMap.get("Versione")));
         assertEquals(
                 "Active", customAttributeValues.get(customAttributesMap.get("Life cycle status")));

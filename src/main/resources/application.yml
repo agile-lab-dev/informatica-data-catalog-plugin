@@ -14,6 +14,32 @@ server:
 # - INFORMATICA_DCMP_PASSWORD
 informatica:
   publish_allowed_environment: ${INFORMATICA_PUBLISH_ALLOWED_ENV:}
+  # Descriptor topology. Only the root publish flag is fixed by the plugin;
+  # all structural paths can be changed for a descriptor dialect.
+  descriptor:
+    data-product:
+      children-path: components
+      kind-path: kind
+      id-path: id
+      publish-path: specific.publishToInformatica
+      shoppable-path: shoppable
+    output-port:
+      children-path: components
+      kind-path: kind
+      kind-value: outputport
+      id-path: id
+      publish-path: specific.publishToInformatica
+      shoppable-path: shoppable
+    subcomponent:
+      children-path: components
+      kind-path: kind
+      kind-value: outputport
+      id-path: id
+      publish-path: specific.publishToInformatica
+      shoppable-path: shoppable
+    schema:
+      path: dataContract.schema
+      name-path: name
   api:
     base-url: ${INFORMATICA_BASE_URL:https://dm-em.informaticacloud.com}
     login: /ma/api/v2/user/login

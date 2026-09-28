@@ -52,8 +52,8 @@ public class DataAssetService {
 
         List<String> createdAssetIds = new ArrayList<>();
 
-        dataContract
-                .getDeliveryTargets()
+        dataContract.getMarketplaceDeliveryTargets().stream()
+                .filter(DeliveryTarget::isShoppable)
                 .forEach(
                         dt -> {
                             try {
@@ -80,16 +80,29 @@ public class DataAssetService {
             DataContract dataContract,
             com.witboost.plugin.informatica.common.model.informatica.DeliveryTarget dt) {
         String dataAssetName = NameBuilder.getDataMarketplaceDataAssetName(dataContract, dt);
+        boolean isFlatDataset =
+                dt.getCatalogAssetType()
+                        == com.witboost.plugin.informatica.common.model.informatica.DeliveryTarget
+                                .CatalogAssetType.DATASET;
+        String catalogAssetType = isFlatDataset ? "dataset" : "system";
+        String catalogAssetName =
+                isFlatDataset
+                        ? NameBuilder.getDataCatalogDataSetName(dt, dt.getDataAssets().get(0))
+                        : dataAssetName;
 
-        log.debug("Retrieving system from Data Catalog with name '{}'", dataAssetName);
-        var foundSystem = assetApiUtil.getAssetByName("system", dataAssetName);
-        if (!foundSystem.hasValidHits()) {
+        log.debug(
+                "Retrieving {} from Data Catalog with name '{}'",
+                catalogAssetType,
+                catalogAssetName);
+        var foundCatalogAsset = assetApiUtil.getAssetByName(catalogAssetType, catalogAssetName);
+        if (!foundCatalogAsset.hasValidHits()) {
             throw new IllegalStateException(
                     String.format(
-                            "Cannot find system with name '%s' in Data Catalog", dataAssetName));
+                            "Cannot find %s with name '%s' in Data Catalog",
+                            catalogAssetType, catalogAssetName));
         }
-        String systemCoreIdentity = foundSystem.getHits().get(0).getCoreIdentity();
-        log.debug("Retrieved system with core identity '{}'", systemCoreIdentity);
+        String catalogAssetCoreIdentity = foundCatalogAsset.getHits().get(0).getCoreIdentity();
+        log.debug("Retrieved catalog asset with core identity '{}'", catalogAssetCoreIdentity);
 
         log.debug("Creating data asset: {}", dataAssetName);
 
@@ -98,7 +111,7 @@ public class DataAssetService {
         request.setDescription(buildDataAssetDescriptionValue(dataContract));
         request.setSource(buildDataAssetSourceValue(dt));
         request.setType("Output Port");
-        request.setRefLink(uiConfig.baseUrl() + "/asset/" + systemCoreIdentity);
+        request.setRefLink(uiConfig.baseUrl() + "/asset/" + catalogAssetCoreIdentity);
 
         var response = dataAssetApiClient.createDataAsset(request);
         var createdAssetId = response.getObjects().get(0).getId();
@@ -115,7 +128,8 @@ public class DataAssetService {
      */
     public List<String> getDataAssetsIds(DataContract dataContract) {
         Set<String> dataAssetNames =
-                dataContract.getDeliveryTargets().stream()
+                dataContract.getMarketplaceDeliveryTargets().stream()
+                        .filter(DeliveryTarget::isShoppable)
                         .map(dt -> NameBuilder.getDataMarketplaceDataAssetName(dataContract, dt))
                         .collect(Collectors.toSet());
         var response = dataAssetApiClient.getAllDataAssetsPaginated(new GetDataAssetsRequest());
@@ -181,7 +195,8 @@ public class DataAssetService {
                                         Function.identity()));
         // Delete obsolete delivery targets
         Set<String> toProvisionDataAssetNames =
-                dataContract.getDeliveryTargets().stream()
+                dataContract.getMarketplaceDeliveryTargets().stream()
+                        .filter(DeliveryTarget::isShoppable)
                         .map(dt -> NameBuilder.getDataMarketplaceDataAssetName(dataContract, dt))
                         .collect(Collectors.toSet());
         List<String> toDeleteDataAssetNames =
@@ -198,7 +213,10 @@ public class DataAssetService {
         }
         // For each data asset to provision, update existing or create new
         List<String> newlyCreatedDataAssetIds = new ArrayList<>();
-        for (var dt : dataContract.getDeliveryTargets()) {
+        for (var dt :
+                dataContract.getMarketplaceDeliveryTargets().stream()
+                        .filter(DeliveryTarget::isShoppable)
+                        .toList()) {
             var dataAssetName = NameBuilder.getDataMarketplaceDataAssetName(dataContract, dt);
             if (currentDataAssetsByName.containsKey(dataAssetName)) {
                 // UPDATE

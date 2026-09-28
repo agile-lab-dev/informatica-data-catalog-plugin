@@ -40,8 +40,19 @@ import lombok.*;
 @Setter
 public class DeliveryTarget {
 
+    public enum CatalogAssetType {
+        SYSTEM,
+        DATASET
+    }
+
     /** Base characteristics cluster */
     @NotNull @Valid private BaseCharacteristics baseCharacteristics = new BaseCharacteristics();
+
+    /** Catalog asset type represented by this descriptor node. */
+    private CatalogAssetType catalogAssetType = CatalogAssetType.SYSTEM;
+
+    private boolean shoppable = true;
+    private boolean consumable;
 
     /** Data assets associated with this output port */
     @Valid private List<DataAsset> dataAssets = new ArrayList<>();

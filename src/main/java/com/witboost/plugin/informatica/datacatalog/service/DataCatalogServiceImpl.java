@@ -12,6 +12,7 @@ import com.witboost.plugin.informatica.common.model.informatica.DeliveryTarget;
 import com.witboost.plugin.informatica.common.model.informatica.TechnicalDataElement;
 import com.witboost.plugin.informatica.common.model.witboost.DataProduct;
 import com.witboost.plugin.informatica.common.parser.Parser;
+import com.witboost.plugin.informatica.common.service.DescriptorTreeService;
 import com.witboost.plugin.informatica.datacatalog.common.exceptions.DataCatalogPluginValidationException;
 import com.witboost.plugin.informatica.datacatalog.config.DataCatalogSourceConfig;
 import com.witboost.plugin.informatica.datacatalog.config.DataCatalogUiConfig;
@@ -29,6 +30,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -43,12 +45,43 @@ public class DataCatalogServiceImpl implements DataCatalogService {
     private final DataAssetMapper dataAssetMapper;
     private final InformaticaDataCatalogService informaticaDataCatalogService;
     private final DataCatalogUiConfig uiConfig;
+    private final DescriptorTreeService descriptorTreeService;
     private final AssetApiUtil assetApiUtil;
     private final DataCatalogSourceConfig dataCatalogSourceConfig;
     private final ValidationLevelConfig validationLevelConfig;
     private final TechnicalElementService technicalElementService;
 
     private final Logger logger = LoggerFactory.getLogger(DataCatalogServiceImpl.class);
+
+    @Autowired
+    public DataCatalogServiceImpl(
+            ValidatorService<DataProduct> dataProductValidator,
+            ValidatorService<DataContract> dataContractValidator,
+            DataContractMapper dataContractMapper,
+            DeliveryTargetMapper deliveryTargetMapper,
+            DataAssetMapper dataAssetMapper,
+            InformaticaDataCatalogService informaticaDataCatalogService,
+            DataCatalogUiConfig uiConfig,
+            DescriptorTreeService descriptorTreeService,
+            AssetApiUtil assetApiUtil,
+            DataCatalogSourceConfig dataCatalogSourceConfig,
+            ValidationLevelConfig validationLevelConfig,
+            TechnicalElementService technicalElementService,
+            @Value("${informatica.publish_allowed_environment}") String publishAllowedEnvironment) {
+        this.dataProductValidator = dataProductValidator;
+        this.dataContractValidator = dataContractValidator;
+        this.dataContractMapper = dataContractMapper;
+        this.deliveryTargetMapper = deliveryTargetMapper;
+        this.dataAssetMapper = dataAssetMapper;
+        this.informaticaDataCatalogService = informaticaDataCatalogService;
+        this.uiConfig = uiConfig;
+        this.descriptorTreeService = descriptorTreeService;
+        this.assetApiUtil = assetApiUtil;
+        this.dataCatalogSourceConfig = dataCatalogSourceConfig;
+        this.validationLevelConfig = validationLevelConfig;
+        this.technicalElementService = technicalElementService;
+        this.publishAllowedEnvironment = publishAllowedEnvironment;
+    }
 
     public DataCatalogServiceImpl(
             ValidatorService<DataProduct> dataProductValidator,
@@ -62,19 +95,23 @@ public class DataCatalogServiceImpl implements DataCatalogService {
             DataCatalogSourceConfig dataCatalogSourceConfig,
             ValidationLevelConfig validationLevelConfig,
             TechnicalElementService technicalElementService,
-            @Value("${informatica.publish_allowed_environment}") String publishAllowedEnvironment) {
-        this.dataProductValidator = dataProductValidator;
-        this.dataContractValidator = dataContractValidator;
-        this.dataContractMapper = dataContractMapper;
-        this.deliveryTargetMapper = deliveryTargetMapper;
-        this.dataAssetMapper = dataAssetMapper;
-        this.informaticaDataCatalogService = informaticaDataCatalogService;
-        this.uiConfig = uiConfig;
-        this.assetApiUtil = assetApiUtil;
-        this.dataCatalogSourceConfig = dataCatalogSourceConfig;
-        this.validationLevelConfig = validationLevelConfig;
-        this.technicalElementService = technicalElementService;
-        this.publishAllowedEnvironment = publishAllowedEnvironment;
+            String publishAllowedEnvironment) {
+        this(
+                dataProductValidator,
+                dataContractValidator,
+                dataContractMapper,
+                deliveryTargetMapper,
+                dataAssetMapper,
+                informaticaDataCatalogService,
+                uiConfig,
+                new DescriptorTreeService(
+                        new com.witboost.plugin.informatica.common.config
+                                .DescriptorStructureProperties()),
+                assetApiUtil,
+                dataCatalogSourceConfig,
+                validationLevelConfig,
+                technicalElementService,
+                publishAllowedEnvironment);
     }
 
     @Override
@@ -155,6 +192,7 @@ public class DataCatalogServiceImpl implements DataCatalogService {
         }
         return Try.of(
                         () -> {
+                            descriptorTreeService.parse(req.getDescriptor());
                             var dataContract = parseMapAndValidate(req);
                             logger.info(
                                     "{} Data Product '{}' to Informatica Data Catalog",

@@ -142,7 +142,8 @@ public class DeliveryTargetService {
                                         Function.identity()));
         // Delete obsolete delivery targets
         Set<String> toProvisionDeliveryTargetNames =
-                dataContract.getDeliveryTargets().stream()
+                dataContract.getMarketplaceDeliveryTargets().stream()
+                        .filter(DeliveryTarget::isShoppable)
                         .map(dt -> NameBuilder.getDataMarketplaceOutputPortName(dataContract, dt))
                         .collect(Collectors.toSet());
         List<String> toDeleteDeliveryTargetNames =
@@ -157,7 +158,10 @@ public class DeliveryTargetService {
         }
 
         // For each delivery target to provision, update existing or create new
-        for (var dt : dataContract.getDeliveryTargets()) {
+        for (var dt :
+                dataContract.getMarketplaceDeliveryTargets().stream()
+                        .filter(DeliveryTarget::isShoppable)
+                        .toList()) {
             String deliveryTargetName =
                     NameBuilder.getDataMarketplaceOutputPortName(dataContract, dt);
             if (currentDeliveryTargetsByOutputPortName.containsKey(deliveryTargetName)) {

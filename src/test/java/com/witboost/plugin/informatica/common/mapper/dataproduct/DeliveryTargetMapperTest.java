@@ -194,13 +194,13 @@ class DeliveryTargetMapperTest {
                         .portName("Snowflake Output Port")
                         .portTechnology("Snowflake")
                         .description("Output port for Snowflake containing 2 data assets")
-                        .version("0.0.0")
-                        .creationDate("2026-01-10")
+                        .version("1.0.0")
+                        .creationDate(null)
                         .isPii(false)
                         .modificationDate("2026-01-15")
-                        .qualityExpectations("Completezza > 99%, Accuratezza > 95%")
-                        .securityConsiderations("TLS 1.3, Access via AD group")
-                        .technicalSpecifications("JDBC connection, View-based access")
+                        .qualityExpectations("Completeness above 99%")
+                        .securityConsiderations("TLS 1.3 and group-based access")
+                        .technicalSpecifications("JDBC connection with view-based access")
                         .build();
         assertEquals(expectedBc, snowflakeTarget.getBaseCharacteristics());
 
@@ -218,22 +218,21 @@ class DeliveryTargetMapperTest {
 
         DataAsset.EntityInfo expectedEntityInfo =
                 DataAsset.EntityInfo.builder()
-                        .entityName("contratto")
-                        .entityDescription(
-                                " Tabella che contiene i contratti in vigore ed altre informazioni riguardanti il folder. Chiave compagnia/archivio/appendice (id_contratto_dvi)")
+                        .entityName("orders")
+                        .entityDescription("Output port for the orders dataset")
                         .entityType("View")
                         .feedingFrequency("Giornaliero")
                         .feedingType("PUSH")
                         .loadingMode("Full")
                         .manualProcess(false)
                         .historicized(true)
-                        .retentionInfo("5 anni")
+                        .retentionInfo("5 years")
                         .sensitiveData(false)
                         .sla(
                                 DataAsset.SLA
                                         .builder()
                                         .refreshRate("Giornaliero")
-                                        .retentionRate("Disponibilità: 99.9%")
+                                        .retentionRate("Availability: 99.9%")
                                         .build())
                         .semanticLinks(null)
                         .build();
@@ -242,10 +241,9 @@ class DeliveryTargetMapperTest {
         // Verify first DataAsset - Attributes
         DataAsset.AttributeInfo expectedFirstAttr =
                 DataAsset.AttributeInfo.builder()
-                        .attributeName("id_contratto_dvi")
-                        .attributeDescription(
-                                "Identificativo Univoco Contratto Compagnia|Archivio|Posizione")
-                        .attributeDomain("text")
+                        .attributeName("order_id")
+                        .attributeDescription("Stable order identifier")
+                        .attributeDomain("TEXT")
                         .length(50)
                         .position(1)
                         .mandatory(false)
@@ -299,7 +297,7 @@ class DeliveryTargetMapperTest {
                         .systemName("TestSystemName")
                         .serverName("TestServerName")
                         .databaseName("TestDBName")
-                        .schemaName("TestSchemaName")
+                        .schemaName("TestSthatmaName")
                         .build();
         assertEquals(expectedSystemInfo, firstAsset.getSystemInfo());
 

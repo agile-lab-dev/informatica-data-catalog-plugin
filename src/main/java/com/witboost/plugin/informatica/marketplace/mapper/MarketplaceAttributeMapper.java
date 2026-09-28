@@ -45,7 +45,12 @@ public class MarketplaceAttributeMapper {
         Map<String, Object> result = new LinkedHashMap<>();
         values.forEach(
                 (name, value) -> {
-                    String id = attributeNamesToIds.get(name);
+                    MarketplaceMappingProperties.AttributeMapping mapping =
+                            properties.getCustomAttributes().get(name);
+                    String id =
+                            mapping != null && mapping.getInformaticaId() != null
+                                    ? mapping.getInformaticaId()
+                                    : attributeNamesToIds.get(name);
                     if (id != null) result.put(id, transform(name, value));
                 });
         return result;

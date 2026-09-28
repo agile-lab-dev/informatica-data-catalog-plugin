@@ -8,6 +8,7 @@ import com.witboost.plugin.informatica.common.mapper.dataproduct.DeliveryTargetM
 import com.witboost.plugin.informatica.common.model.informatica.DataContract;
 import com.witboost.plugin.informatica.common.model.witboost.DataProduct;
 import com.witboost.plugin.informatica.common.parser.Parser;
+import com.witboost.plugin.informatica.common.service.DescriptorTreeService;
 import com.witboost.plugin.informatica.marketplace.exceptions.MarketplacePluginValidationException;
 import com.witboost.plugin.informatica.marketplace.openapi.model.ProvisioningRequest;
 import com.witboost.plugin.informatica.marketplace.openapi.model.ProvisioningResultRequest;
@@ -18,12 +19,15 @@ import com.witboost.plugin.informatica.marketplace.openapi.model.ValidationResul
 import java.util.ArrayList;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 @Component
 @Slf4j
 public class MarketplaceServiceImpl implements MarketplaceService {
+
+    private final DescriptorTreeService descriptorTreeService;
 
     @Value("${informatica.publish_allowed_environment}")
     private String publishAllowedEnvironment;
@@ -42,6 +46,26 @@ public class MarketplaceServiceImpl implements MarketplaceService {
 
     private final MarketplaceCategoryValidator marketplaceCategoryValidator;
 
+    @Autowired
+    public MarketplaceServiceImpl(
+            ValidatorService<DataProduct> dataProductValidator,
+            ValidatorService<DataContract> dataContractValidator,
+            DataContractMapper dataContractMapper,
+            DeliveryTargetMapper deliveryTargetMapper,
+            DataAssetMapper dataAssetMapper,
+            InformaticaDataMarketplaceService dataMarketplaceService,
+            MarketplaceCategoryValidator marketplaceCategoryValidator,
+            DescriptorTreeService descriptorTreeService) {
+        this.dataProductValidator = dataProductValidator;
+        this.dataContractValidator = dataContractValidator;
+        this.dataContractMapper = dataContractMapper;
+        this.deliveryTargetMapper = deliveryTargetMapper;
+        this.dataAssetMapper = dataAssetMapper;
+        this.informaticaDataMarketplaceService = dataMarketplaceService;
+        this.marketplaceCategoryValidator = marketplaceCategoryValidator;
+        this.descriptorTreeService = descriptorTreeService;
+    }
+
     public MarketplaceServiceImpl(
             ValidatorService<DataProduct> dataProductValidator,
             ValidatorService<DataContract> dataContractValidator,
@@ -50,13 +74,17 @@ public class MarketplaceServiceImpl implements MarketplaceService {
             DataAssetMapper dataAssetMapper,
             InformaticaDataMarketplaceService dataMarketplaceService,
             MarketplaceCategoryValidator marketplaceCategoryValidator) {
-        this.dataProductValidator = dataProductValidator;
-        this.dataContractValidator = dataContractValidator;
-        this.dataContractMapper = dataContractMapper;
-        this.deliveryTargetMapper = deliveryTargetMapper;
-        this.dataAssetMapper = dataAssetMapper;
-        this.informaticaDataMarketplaceService = dataMarketplaceService;
-        this.marketplaceCategoryValidator = marketplaceCategoryValidator;
+        this(
+                dataProductValidator,
+                dataContractValidator,
+                dataContractMapper,
+                deliveryTargetMapper,
+                dataAssetMapper,
+                dataMarketplaceService,
+                marketplaceCategoryValidator,
+                new DescriptorTreeService(
+                        new com.witboost.plugin.informatica.common.config
+                                .DescriptorStructureProperties()));
     }
 
     @Override
@@ -73,6 +101,7 @@ public class MarketplaceServiceImpl implements MarketplaceService {
                     .status("COMPLETED")
                     .result(publishDecision.reason());
         }
+        descriptorTreeService.parse(provisioningResultRequest.getDescriptor());
         // Failures must propagate as exceptions so the controller returns 4xx/5xx and Witboost
         // marks the operation as failed. Returning HTTP 200 with status "FAILED" makes Witboost
         // show the publish as successful (it keys off the HTTP status, not the body field).

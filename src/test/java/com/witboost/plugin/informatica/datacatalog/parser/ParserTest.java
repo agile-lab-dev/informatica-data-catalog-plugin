@@ -163,8 +163,9 @@ class ParserTest {
     @Test
     @DisplayName("Should publish output ports that do not declare the flag (opt-out semantics)")
     void shouldPublishOutputPortsWithoutFlag() {
-        String yaml = descriptorWithOutputPorts(
-            "      company: example-company", "      company: example-company");
+        String yaml =
+                descriptorWithOutputPorts(
+                        "      company: example-company", "      company: example-company");
         var outputPorts = Parser.parseDataProduct(yaml).get().extractOutputPorts();
         assertEquals(2, outputPorts.size());
     }

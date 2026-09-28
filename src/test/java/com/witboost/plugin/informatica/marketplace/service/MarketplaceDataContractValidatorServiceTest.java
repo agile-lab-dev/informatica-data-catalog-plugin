@@ -22,8 +22,7 @@ import org.junit.jupiter.api.Test;
  */
 class MarketplaceDataContractValidatorServiceTest {
 
-    private static final String COMPONENT_ID =
-            "urn:example:component:analytics:orders";
+    private static final String COMPONENT_ID = "urn:example:component:analytics:orders";
 
     private final DataContractValidatorService service;
 

@@ -125,9 +125,20 @@ public class InformaticaDataCatalogService {
                                                 .toUpperCase()) // TODO for some reason sometimes it
                         // is returned lowercase
                         .collect(Collectors.toSet());
+        var existingFlatDatasets =
+                assetApiClient
+                        .pollForResults(String.format("dataset in system \"%s\"", dataProductName))
+                        .getHits()
+                        .stream()
+                        .map(hit -> hit.getSummary().getCoreName())
+                        .collect(Collectors.toSet());
 
         var toProvisionOutputPorts =
                 dataContract.getDeliveryTargets().stream()
+                        .filter(
+                                dt ->
+                                        dt.getCatalogAssetType()
+                                                == DeliveryTarget.CatalogAssetType.SYSTEM)
                         .map(dt -> NameBuilder.getDataCatalogOutputPortName(dataContract, dt))
                         .collect(Collectors.toSet());
 
@@ -151,7 +162,40 @@ public class InformaticaDataCatalogService {
         Map<String, Operation> outputPortOperationsMap = new HashMap<>();
         Map<String, Operation> dataSetOperationsMap = new HashMap<>();
 
+        var toProvisionFlatDatasets =
+                dataContract.getDeliveryTargets().stream()
+                        .filter(
+                                dt ->
+                                        dt.getCatalogAssetType()
+                                                == DeliveryTarget.CatalogAssetType.DATASET)
+                        .flatMap(
+                                dt ->
+                                        dt.getDataAssets().stream()
+                                                .map(
+                                                        dataSet ->
+                                                                NameBuilder
+                                                                        .getDataCatalogDataSetName(
+                                                                                dt, dataSet)))
+                        .collect(Collectors.toSet());
+        for (var existingFlatDataset : existingFlatDatasets) {
+            if (!toProvisionFlatDatasets.contains(existingFlatDataset)) {
+                invokeDeleteAssetApi("dataset", existingFlatDataset);
+            }
+        }
+
         for (var dt : dataContract.getDeliveryTargets()) {
+            if (dt.getCatalogAssetType() == DeliveryTarget.CatalogAssetType.DATASET) {
+                String outputPortName = NameBuilder.getDataCatalogOutputPortName(dataContract, dt);
+                String dataSetName =
+                        NameBuilder.getDataCatalogDataSetName(dt, dt.getDataAssets().get(0));
+                Operation operation =
+                        existingFlatDatasets.contains(dataSetName)
+                                ? Operation.UPDATE
+                                : Operation.CREATE;
+                outputPortOperationsMap.put(outputPortName, operation);
+                dataSetOperationsMap.put(dataSetName, operation);
+                continue;
+            }
             var toProvisionOutputPortName =
                     NameBuilder.getDataCatalogOutputPortName(dataContract, dt);
             if (!existingOutputPorts.contains(toProvisionOutputPortName)) {
@@ -242,6 +286,9 @@ public class InformaticaDataCatalogService {
         }
         // Delete Output Port
         for (var deliveryTarget : dataContract.getDeliveryTargets()) {
+            if (deliveryTarget.getCatalogAssetType() == DeliveryTarget.CatalogAssetType.DATASET) {
+                continue;
+            }
             invokeDeleteAssetApi(
                     "system",
                     NameBuilder.getDataCatalogOutputPortName(dataContract, deliveryTarget));
@@ -289,6 +336,9 @@ public class InformaticaDataCatalogService {
             throw new IllegalArgumentException("Unexpected operation " + operation);
         }
         for (var dt : dataContract.getDeliveryTargets()) {
+            if (dt.getCatalogAssetType() == DeliveryTarget.CatalogAssetType.DATASET) {
+                continue;
+            }
             String deliveryTargetName = NameBuilder.getDataCatalogOutputPortName(dataContract, dt);
             var catalogSourceName =
                     dataCatalogSourceConfig.getCatalogSourceByTechnology(
@@ -538,7 +588,13 @@ public class InformaticaDataCatalogService {
         }
 
         // Add Output Port system and its Data Assets
-        mapper.addSystem(dt, deliveryTargetOperation, outputPortExtras);
+        if (dt.getCatalogAssetType() == DeliveryTarget.CatalogAssetType.SYSTEM) {
+            mapper.addSystem(dt, deliveryTargetOperation, outputPortExtras);
+        } else {
+            outputPortExtras.put(
+                    MappingContext.DELIVERY_TARGET_NAME,
+                    NameBuilder.getDataCatalogDataProductName(dataContract));
+        }
         mapper.addDataSets(dt, dataSetsOperations, outputPortExtras, assetApiClient);
     }
 

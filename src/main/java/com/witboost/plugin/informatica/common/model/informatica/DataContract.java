@@ -1,5 +1,6 @@
 package com.witboost.plugin.informatica.common.model.informatica;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.witboost.plugin.informatica.common.model.ValidationLevel;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
@@ -107,6 +108,12 @@ public class DataContract {
      * DataAssets.
      */
     @Valid @Builder.Default private List<DeliveryTarget> deliveryTargets = new ArrayList<>();
+
+    @JsonIgnore private List<DeliveryTarget> marketplaceDeliveryTargets;
+
+    public List<DeliveryTarget> getMarketplaceDeliveryTargets() {
+        return marketplaceDeliveryTargets == null ? deliveryTargets : marketplaceDeliveryTargets;
+    }
 
     /**
      * Resolved validation level for this provisioning. Drives how deeply the descriptor is checked
@@ -586,7 +593,7 @@ public class DataContract {
      *
      * <pre>
      * Input:  {"Product Owner" -> "com.infa.odin.models.custom.ca_7007540664947074703", ...}
-    * Output: {"com.infa.odin.models.custom.ca_7007540664947074703" -> "Example Owner", ...}
+     * Output: {"com.infa.odin.models.custom.ca_7007540664947074703" -> "Example Owner", ...}
      * </pre>
      *
      * @param customAttributesMap Map of custom attribute names to Informatica IDs

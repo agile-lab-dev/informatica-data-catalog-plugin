@@ -33,8 +33,8 @@ class DataCatalogAssetApiClientTest {
         String query =
                 "columns related to technical dataset 'example_dataset'"
                         + " and in (source 'EXAMPLE_CATALOG_SOURCE')"
-                    + " and in (database 'example_database')"
-                    + " and in (schema 'example_schema')";
+                        + " and in (database 'example_database')"
+                        + " and in (schema 'example_schema')";
         String body = "{}";
 
         AssetGetResponse response = client.pollForResults(query);

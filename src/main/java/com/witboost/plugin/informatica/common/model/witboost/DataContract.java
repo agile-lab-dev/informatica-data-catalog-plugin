@@ -25,7 +25,13 @@ public class DataContract {
 
     public void setRawDataContract(JsonNode rawDataContract) {
         this.rawDataContract = rawDataContract;
+        if (rawDataContract == null || !rawDataContract.has("schema")) {
+            return;
+        }
         var schema = (ArrayNode) rawDataContract.get("schema");
+        if (schema == null || this.schema == null) {
+            return;
+        }
         this.schema.forEach(
                 column -> {
                     for (JsonNode jsonColumn : schema) {

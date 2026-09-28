@@ -9,7 +9,7 @@ The adapter exposes the Catalog and Marketplace contracts in `src/main/resources
 | Witboost object | Data Catalog | Data Marketplace |
 | --- | --- | --- |
 | Data product | Top-level system | Collection |
-| Output port | System and data set hierarchy | Delivery target and data asset |
+| Output port | Flat output port: Dataset; nested output port: System | Delivery target and data asset when `shoppable` is true |
 | Data contract | Workbook metadata | Data asset metadata and custom attributes |
 
 The provisioning workflow is opinionated, while ordinary mapping differences are configured with YAML. Advanced naming, value transformation, catalog source resolution, and workbook mapping can be replaced with Spring beans.
@@ -47,7 +47,7 @@ GitLab CI runs the same work in separate check, test, and build stages on Java 1
 
 Runtime configuration is stored in `src/main/resources/application.yml`. Credentials and tenant-specific values must come from deployment secrets or environment variables; no tenant identifier or credential is provided by default.
 
-The default profile supports API endpoints, authentication settings, publication flags, validation levels, technology-keyed Catalog sources, Marketplace categories, and custom attributes. Custom attribute IDs are resolved by name through the Informatica tenant API and are never hardcoded in application code.
+The default profile supports API endpoints, authentication settings, publication flags, descriptor topology, validation levels, technology-keyed Catalog sources, Marketplace categories, and custom attributes. Marketplace custom attribute mappings can provide the technical `informatica-id`; display names are not used as identifiers.
 
 Catalog sources are optional per technology. Metadata synchronization runs only for configured and enabled sources.
 
@@ -109,6 +109,10 @@ components:
 
 The root `specific.publishToInformatica` flag is required and must be `true` for publication. If it is missing or `false`, the product is skipped. An optional component-level `specific.publishToInformatica: false` excludes only that output port. The environment can also be restricted with `INFORMATICA_PUBLISH_ALLOWED_ENV`.
 
+Descriptor structure paths are configurable under `informatica.descriptor`. The standard defaults are `components`, `kind`, `id`, and `dataContract.schema`; only the root `specific.publishToInformatica` flag is fixed. An output port without children is imported as a Catalog Dataset. An output port with nested output-port children is imported as a Catalog System whose children are Datasets. Schema fields become Technical Data elements.
+
+Marketplace publication is independent from Catalog publication. A node with `shoppable: true` creates one Delivery Target and one Data Asset; an explicit `shoppable: false` excludes that node from Marketplace while leaving it in Catalog. In a nested output port, parent and children are evaluated independently. A Data Product Collection is still created even when no node is shoppable.
+
 The adapter uses these descriptor fields:
 
 | Descriptor path | Purpose |
@@ -162,7 +166,17 @@ informatica:
         production: HIGH
 ```
 
-`mapping.categories` defines the category hierarchy in order. Each `descriptor-path` is relative to `specific`; the configured levels must exist in the descriptor and in Informatica. `mapping.custom-attributes` maps an Informatica attribute name to a descriptor path. Attribute IDs are looked up at runtime by name, so they are not copied into YAML. `required`, `default-value`, and `transformer` control validation and conversion. The built-in transformer is `identity`; custom transformers are Spring beans implementing `DescriptorValueTransformer`.
+`mapping.categories` defines the category hierarchy in order. Each `descriptor-path` is relative to `specific`; the configured levels must exist in the descriptor and in Informatica. `mapping.custom-attributes` maps a configured key to a descriptor path. Prefer the technical Informatica ID explicitly:
+
+```yaml
+custom-attributes:
+  Business Owner:
+    informatica-id: com.infa.odin.models.custom.ca_example
+    descriptor-path: businessOwner
+    required: true
+```
+
+`required`, `default-value`, and `transformer` control validation and conversion. The built-in transformer is `identity`; custom transformers are Spring beans implementing `DescriptorValueTransformer`. Where Informatica provides custom-attribute discovery, the API can be used to verify the configured ID, but the display name is never the application identifier.
 
 `data-catalog.catalog-source.sources` is a map keyed by the exact lower-case output-port technology. A missing source causes validation to fail for that output port. Set `enable-metadata-sync` to `false` when source synchronization is not part of the deployment.
 

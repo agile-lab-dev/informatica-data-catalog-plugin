@@ -40,7 +40,8 @@ class MarketplaceCategoryValidatorTest {
 
     @Test
     void emptyWhenCategoryExists() {
-        when(categoryService.getCategoryByCompanyDomainSubdomain("example-company", "Marketing", "CAM"))
+        when(categoryService.getCategoryByCompanyDomainSubdomain(
+                        "example-company", "Marketing", "CAM"))
                 .thenReturn(new Category());
 
         assertTrue(
@@ -79,7 +80,8 @@ class MarketplaceCategoryValidatorTest {
                 new MarketplaceCategoryValidator(categoryService, false);
 
         assertTrue(
-                disabled.validateCategoryExists(dataContract("example-company", "Marketing", "CAM")).isEmpty());
+                disabled.validateCategoryExists(dataContract("example-company", "Marketing", "CAM"))
+                        .isEmpty());
         verifyNoInteractions(categoryService);
     }
 }
