@@ -1,0 +1,48 @@
+# -- Docker Registry Secret name used to access a private repository
+dockerRegistrySecretName: regcred
+
+image:
+  # -- Image repository
+  registry: registry.gitlab.com/agilefactory/witboost.mesh/provisioning/witboost.mesh.provisioning.datacatalogplugin/witboost.oss.data-catalog-plugin.informatica
+  # -- Image tag
+  tag: latest
+  # -- Image pull policy
+  pullPolicy: Always
+
+credentials:
+  # -- Existing Secret containing the Informatica credentials
+  existingSecret: witboost-addons-secrets
+  # -- Secret key containing the Informatica username
+  usernameKey: INFORMATICA_DCMP_USERNAME
+  # -- Secret key containing the Informatica password
+  passwordKey: INFORMATICA_DCMP_PASSWORD
+
+otel:
+  enabled: "false"
+  collectorUrl: http://localhost:5555
+  metricExporter: otlp
+  serviceName: informatica-data-catalog-plugin
+  tracesExporter: otlp
+
+# -- Additional environment variables for the container
+extraEnvVars: []
+
+# -- Readiness probe specification
+readinessProbe: {}
+
+# -- Liveness probe specification
+livenessProbe: {}
+
+securityContext:
+  runAsUser: 1001
+  allowPrivilegeEscalation: false
+  runAsNonRoot: true
+
+# -- Container resource requests and limits
+resources: {}
+
+# -- Additional common labels
+labels: {}
+
+# -- Override the bundled application.yml
+configOverride:

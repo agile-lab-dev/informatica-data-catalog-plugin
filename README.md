@@ -71,6 +71,47 @@ mvn spring-boot:run
 
 The plugin listens on port `8888` by default; set `SERVER_PORT` to change it.
 
+## Deployment
+
+### Build the Docker Image
+
+Package the application and build the image from the repository root:
+
+```bash
+mvn package -DskipTests
+docker build -t informatica-plugin:local .
+```
+
+The GitLab pipeline performs the same Docker build after the Maven package job. It does not publish the image to a registry. Before deploying to Kubernetes, make the image available to the target cluster and set the corresponding repository and tag in the Helm values.
+
+### Configure the Credentials
+
+The Helm chart reads the Informatica service-account credentials from an existing Kubernetes Secret. By default, it expects a Secret named `witboost-addons-secrets` with the keys `INFORMATICA_DCMP_USERNAME` and `INFORMATICA_DCMP_PASSWORD`:
+
+```bash
+kubectl create secret generic witboost-addons-secrets \
+	--from-literal=INFORMATICA_DCMP_USERNAME='<username>' \
+	--from-literal=INFORMATICA_DCMP_PASSWORD='<password>'
+```
+
+Do not store credentials in Helm values or commit them to the repository. To use a different Secret or key names, override `credentials.existingSecret`, `credentials.usernameKey`, and `credentials.passwordKey`.
+
+### Install with Helm
+
+Validate and install the chart with the image available to the cluster:
+
+```bash
+helm lint ./helm
+
+helm upgrade --install informatica-data-catalog-plugin ./helm \
+	--set image.registry='<registry>/<repository>' \
+	--set image.tag='<tag>'
+```
+
+The Service exposes the application on port `8888` inside the cluster. Use `configOverride` to replace the bundled `application.yml`, or `extraEnvVars` for individual environment-variable overrides. Private registries require the pull Secret configured by `dockerRegistrySecretName`.
+
+See [the Helm chart documentation](helm/README.md) for the chart-specific options.
+
 ## Documentation
 
 - [High-level design](docs/high-level-design.md): lifecycle, interactions with Informatica, and tenant prerequisites.

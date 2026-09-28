@@ -1,0 +1,12 @@
+.git
+.gitignore
+.idea
+.m2
+.vscode
+docs
+helm
+policies
+src
+target/*
+!target/informatica-plugin-*.jar
+!target/informatica-plugin-*.jar.original

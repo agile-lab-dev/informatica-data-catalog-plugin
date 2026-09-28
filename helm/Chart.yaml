@@ -1,0 +1,9 @@
+apiVersion: v2
+name: informatica-data-catalog-plugin
+description: A Helm chart for the Witboost Informatica Data Catalog plugin
+type: application
+version: 0.0.1
+appVersion: "1.11.0"
+maintainers:
+  - name: AgileLab
+    url: https://www.agilelab.it
