@@ -19,8 +19,8 @@ informatica:
     base-url: ${INFORMATICA_BASE_URL:http://localhost:18080}
     login: /ma/api/v2/user/login
     token: /identity-service/api/v1/jwt/Token?client_id=idmc_api&nonce=1234
-    username: ${INFORMATICA_DCMP_USERNAME:}
-    password: ${INFORMATICA_DCMP_PASSWORD:}
+    username: ${INFORMATICA_DCMP_USERNAME:test-user}
+    password: ${INFORMATICA_DCMP_PASSWORD:test-password}
 
   # Informatica Data Marketplace API Configuration
   # Matches MarketplaceApiConfig class structure
