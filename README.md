@@ -1,215 +1,85 @@
 # Witboost Informatica Plugin
 
-This project is a Java 17 Spring Boot adapter that publishes a Witboost Data Product Descriptor to Informatica Data Catalog and Data Marketplace.
+This repository contains an Agile Lab plugin for [Witboost](https://www.witboost.com). It translates a Witboost Data Product Descriptor into metadata managed by Informatica.
+
+The plugin supports two complementary Informatica capabilities:
+
+- **Data Governance and Catalog** for technical assets, their physical locations, and schema metadata.
+- **Data Marketplace** for data-product discovery, delivery targets, and links to catalogued assets.
 
 ## Overview
 
-The adapter exposes the Catalog and Marketplace contracts in `src/main/resources/openapi/` and maps one descriptor to both Informatica products:
+A Witboost provisioning request supplies a Data Product Descriptor to the plugin. When publication is enabled for that descriptor, the plugin validates it, creates or reconciles the technical metadata in Data Governance and Catalog, and publishes the consumer-facing representation in Data Marketplace.
 
-| Witboost object | Data Catalog | Data Marketplace |
-| --- | --- | --- |
-| Data product | Top-level system | Collection |
-| Output port | Flat output port: Dataset; nested output port: System | Delivery target and data asset when `shoppable` is true |
-| Data contract | Workbook metadata | Data asset metadata and custom attributes |
+```mermaid
+flowchart LR
+	D[Witboost Data Product Descriptor] --> P[Informatica Plugin]
+	P --> C[Data Governance and Catalog]
+	P --> M[Data Marketplace]
+	C --> M
+```
 
-The provisioning workflow is opinionated, while ordinary mapping differences are configured with YAML. Advanced naming, value transformation, catalog source resolution, and workbook mapping can be replaced with Spring beans.
+The Catalog representation is the technical foundation. Marketplace uses it to expose eligible output ports as delivery options and to reference their catalogued assets. Publication is opt-in at data-product level and can be limited by environment or disabled for individual output ports.
 
-## Requirements
+## Run Locally
+
+### Prerequisites
 
 - Java 17
 - Maven 3.9 or newer
-- An Informatica tenant for live provisioning tests
+- An Informatica tenant and service account only when validating or provisioning against a live tenant
 
-The repository includes `.java-version` for `jenv` users:
+For `jenv` users:
 
 ```bash
 jenv local 17
 export JAVA_HOME=$(/usr/libexec/java_home -v 17)
 ```
 
-## Building
+### Configure
 
-Run formatting checks, tests, and packaging with:
+The runtime defaults are in `src/main/resources/application.yml`. Copy `.env.example` to `.env`, set the Informatica service-account credentials and any tenant-specific URLs, then load the variables into the current shell:
+
+```bash
+cp .env.example .env
+set -a
+source .env
+set +a
+```
+
+Do not commit `.env`. The [authentication guide](docs/informatica-authentication.md) explains the required access and every connection setting.
+
+### Build and Test
 
 ```bash
 mvn verify
 ```
 
-Format Java and resource files locally with:
+This command runs formatting checks, tests, and packaging. Format local changes with:
 
 ```bash
 mvn spotless:apply
 ```
 
-GitLab CI runs the same work in separate check, test, and build stages on Java 17. Surefire reports and the packaged JAR are retained as job artifacts.
+The ordinary unit tests do not require access to Informatica. Live validation and provisioning do require a configured tenant.
 
-## Configuration
-
-Runtime configuration is stored in `src/main/resources/application.yml`. Credentials and tenant-specific values must come from deployment secrets or environment variables; no tenant identifier or credential is provided by default.
-
-The default profile supports API endpoints, authentication settings, publication flags, descriptor topology, validation levels, technology-keyed Catalog sources, Marketplace categories, and custom attributes. Each Marketplace custom attribute is configured directly under its technical Informatica ID.
-
-Catalog sources are optional per technology. Metadata synchronization runs only for configured and enabled sources.
-
-### Descriptor input
-
-The adapter receives the original Witboost Data Product Descriptor as YAML or JSON. It does not receive the internal Informatica model shown in the Java sources. The relevant shape is:
-
-```yaml
-id: urn:example:data-product:orders:1
-name: Orders
-description: Curated order data for analytics
-version: 1.0.0
-environment: development
-kind: dataproduct
-dataProductOwnerDisplayName: Example Owner
-status: Draft
-specific:
-  publishToInformatica: true
-  company: Example Organization
-  businessDomain: Commercial
-  businessSubdomain: Orders
-  technicalOwners: example-team
-  dataProductType: Source-aligned
-  lifeCycleStatus: Draft
-  sensitiveInfo: No
-  confidentiality: Private
-  memorizationType: No
-  creationDate: 2026-01-01
-  customAttributes:
-    businessOwner: Example Owner
-    dataClassification: Internal
-components:
-  - id: urn:example:component:orders:1
-    kind: outputport
-    name: Orders API
-    description: Orders exposed for analytical consumption
-    version: 1.0.0
-    technology: example-technology
-    outputPortType: table
-    specific:
-      publishToInformatica: true
-      systemName: Orders System
-      serverName: example-server
-      databaseName: analytics
-      schemaName: curated
-      entityName: orders
-      entityType: table
-      isPii: false
-      creationDate: 2026-01-01
-    dataContract:
-      schema:
-        - name: order_id
-          description: Stable order identifier
-          dataType: string
-        - name: order_date
-          description: Order creation date
-          dataType: date
-```
-
-The root `specific.publishToInformatica` flag is required and must be `true` for publication. If it is missing or `false`, the product is skipped. An optional component-level `specific.publishToInformatica: false` excludes only that output port. The environment can also be restricted with `INFORMATICA_PUBLISH_ALLOWED_ENV`.
-
-Descriptor structure paths are configurable under `informatica.descriptor`. The standard defaults are `components`, `kind`, `id`, and `dataContract.schema`; only the root `specific.publishToInformatica` flag is fixed. An output port without children is imported as a Catalog Dataset. An output port with nested output-port children is imported as a Catalog System whose children are Datasets. Schema fields become Technical Data elements.
-
-Marketplace publication is independent from Catalog publication. A node with `shoppable: true` creates one Delivery Target and one Data Asset; an explicit `shoppable: false` excludes that node from Marketplace while leaving it in Catalog. In a nested output port, parent and children are evaluated independently. A Data Product Collection is still created even when no node is shoppable.
-
-The adapter uses these descriptor fields:
-
-| Descriptor path | Purpose |
-| --- | --- |
-| `id`, `name`, `description`, `version` | Data product identity and Catalog/Marketplace names |
-| `specific.company` | Root Marketplace category |
-| `specific.businessDomain` | Second Marketplace category |
-| `specific.businessSubdomain` | Third Marketplace category |
-| `specific.customAttributes` | Generic values mapped to Marketplace custom attributes |
-| `components[]` | Candidate output ports and data assets |
-| `components[].technology` | Catalog source key and Marketplace delivery template key |
-| `components[].specific.systemName`, `databaseName`, `schemaName`, `entityName` | Technical Catalog location |
-| `components[].specific.dataContract.schema` | Dataset columns and data contract metadata |
-
-Storage components can remain in the descriptor, but only output-port and data-asset components are published by this adapter.
-
-### Customizing `application.yml`
-
-Start from `src/main/resources/application.yml` and override values through a profile or environment variables. Keep credentials outside the file:
-
-```yaml
-informatica:
-  marketplace:
-    category-validation-enabled: true
-    mapping:
-      categories:
-        - descriptor-path: specific.company
-        - descriptor-path: specific.businessDomain
-        - descriptor-path: specific.businessSubdomain
-      custom-attributes:
-        com.infa.odin.models.custom.ca_business_owner:
-          descriptor-path: specific.businessOwner
-          required: true
-        com.infa.odin.models.custom.ca_classification:
-          descriptor-path: specific.dataClassification
-          default-value: Internal
-          transformer: identity
-  api:
-    base-url: https://example-idmc.example.com
-    username: ${INFORMATICA_DCMP_USERNAME}
-    password: ${INFORMATICA_DCMP_PASSWORD}
-  data-catalog:
-    catalog-source:
-      enable-metadata-sync: true
-      sources:
-        example-technology: EXAMPLE_CATALOG_SOURCE
-        another-technology: ANOTHER_CATALOG_SOURCE
-    validation-level:
-      level: LOW
-      by-environment:
-        development: LOW
-        production: HIGH
-```
-
-`mapping.categories` defines the category hierarchy in order. Category and custom-attribute paths are relative to the data-product root, so fields under `specific` include that segment. The configured category levels must exist in both the descriptor and Informatica.
-
-Structure paths are relative to the node being processed: data-product paths start at the descriptor root, output-port paths start at that output-port object, and subcomponent paths start at that subcomponent object. Children are always read from the local `components` field.
-
-The key under `mapping.custom-attributes` is the technical Informatica attribute ID; no display name lookup is performed:
-
-```yaml
-custom-attributes:
-  com.infa.odin.models.custom.ca_example:
-    descriptor-path: specific.businessOwner
-    required: true
-```
-
-`required`, `default-value`, and `transformer` control validation and conversion. The built-in transformer is `identity`; custom transformers are Spring beans implementing `DescriptorValueTransformer`.
-
-`data-catalog.catalog-source.sources` is a map keyed by the exact lower-case output-port technology. A missing source causes validation to fail for that output port. Set `enable-metadata-sync` to `false` when source synchronization is not part of the deployment.
-
-Useful environment overrides include `INFORMATICA_BASE_URL`, `INFORMATICA_DCMP_USERNAME`, `INFORMATICA_DCMP_PASSWORD`, `INFORMATICA_MP_BASE_URL`, `INFORMATICA_DC_BASE_URL`, `INFORMATICA_DC_ENABLE_METADATA_SYNC`, `INFORMATICA_DC_VALIDATION_LEVEL`, and `INFORMATICA_PUBLISH_ALLOWED_ENV`.
-
-## Publication controls
-
-Set `specific.publishToInformatica: false` to disable publication for a data product. An output port can set the same flag to exclude only that output port. The output-port default is publication.
-
-## Running locally
-
-Provide credentials and API settings through environment variables, then start the application:
+### Start
 
 ```bash
 mvn spring-boot:run
 ```
 
-Unit and deterministic tests do not require external services. Live integration tests are opt-in and require a separately configured Informatica tenant.
+The plugin listens on port `8888` by default; set `SERVER_PORT` to change it.
 
-## Security and data handling
+## Documentation
 
-Do not commit credentials, tenant IDs, private URLs, or production descriptors. Treat credentials previously committed to repository history as compromised, rotate them, and scan the complete publication history before release.
+- [High-level design](docs/high-level-design.md): lifecycle, interactions with Informatica, and tenant prerequisites.
+- [Low-level design](docs/low-level-design.md): publication gates, Catalog and Marketplace loading flows, and Catalog-source behavior.
+- [Informatica authentication](docs/informatica-authentication.md): service-account setup, token lifecycle, and security guidance.
+- [Descriptor-to-Informatica mapping](docs/descriptor-to-informatica-mapping.md): field mapping and configuration choices.
+- [Data Governance and Catalog API reference](docs/informatica_api_references/Cloud_Data_Governance_and_Catalog_July2026_API_Reference.md)
+- [Data Marketplace API reference](docs/informatica_api_references/Cloud_Data_MarketPlace_July2026_API_Reference.md)
 
-Vendor API reference material is not part of the OSS distribution unless its redistribution license has been verified. Use the official Informatica documentation for current API details.
+## About
 
-## License
-
-This project is intended for release under the Apache License 2.0. Add the approved `LICENSE` file before publishing a release.
-
-## About Witboost
-
-[Witboost](https://www.witboost.com) is a data experience platform for productizing, governing, and discovering data products across technology platforms.
+[Agile Lab](https://agilelab.it) and [Witboost](https://www.witboost.com) help organizations build, govern, and operate data products across heterogeneous technology platforms. This plugin is the integration layer that keeps the Witboost data-product experience aligned with Informatica metadata and marketplace capabilities.
