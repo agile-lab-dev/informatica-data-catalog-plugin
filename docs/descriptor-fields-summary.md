@@ -6,7 +6,7 @@ The descriptor is the original Witboost Data Product Descriptor. The plugin pars
 
 ## Mapping configurability
 
-Mapping is configurable, but not entirely data-driven.
+Mapping is configurable, and the structural descriptor paths used by the neutral tree are configurable under `informatica.descriptor`.
 
 ### Configurable through YAML
 
@@ -14,6 +14,7 @@ The following settings are controlled by `informatica.marketplace.mapping`:
 
 - `categories`: the Marketplace category hierarchy. Each `descriptor-path` is resolved relative to the descriptor `specific` object and is evaluated in list order.
 - `custom-attributes`: maps an Informatica custom attribute name to a descriptor path. Each mapping can define `required`, `default-value`, and `transformer`.
+- `informatica.descriptor`: configures component, child-component, discriminator, identifier, publication, shoppable, and schema paths.
 
 Example:
 
@@ -35,7 +36,7 @@ informatica:
           transformer: identity
 ```
 
-Custom attribute IDs are resolved at runtime by Informatica attribute name. They are not hardcoded in the descriptor or in application configuration.
+Custom attribute mappings should provide `informatica-id`. The ID is the technical Informatica identifier; display names are not used as application identifiers. Runtime discovery may validate the ID where the tenant API supports it.
 
 The built-in value transformer is `identity`. Additional transformers can be provided as Spring beans implementing `DescriptorValueTransformer`; their `name()` must match the configured `transformer` value.
 
@@ -49,7 +50,8 @@ The core mapping between descriptor fields and Informatica models is implemented
 - technical system, database, schema, and entity information;
 - data contract columns;
 - vocabulary normalization and default values;
-- grouping Output Ports by technology into Marketplace Delivery Targets.
+- Catalog hierarchy: Data Product System, flat Output Port Dataset, nested Output Port System, child Dataset, and schema Technical Data element.
+- Marketplace hierarchy: Data Collection for the Data Product and one Delivery Target/Data Asset for each shoppable node.
 
 These mappings are not changed by the Marketplace YAML mapping. Advanced behavior can be changed by replacing or extending the relevant Spring mapper or service beans.
 
@@ -130,7 +132,7 @@ Output Ports are read from `components[]` entries whose `kind` is `outputport` o
 | `specific.retentionInfo` | No | Retention information for the Data Asset. |
 | `specific.semanticLinks` | No | Semantic or glossary links. |
 
-Output Ports are grouped by technology when creating Informatica Delivery Targets. Multiple Output Ports with the same technology become Data Assets under the same Delivery Target.
+Output Ports are preserved independently. A flat output port is a Catalog Dataset. A nested output port is a Catalog System and each nested output port is a child Dataset. Marketplace Delivery Targets and Data Assets are created only for nodes with `shoppable: true`; parent and child flags are independent.
 
 ## Data contract columns
 
@@ -161,3 +163,377 @@ These controls are separate from field mapping:
 - `informatica.data-catalog.catalog-source.sources` maps output-port technologies to Catalog sources.
 
 See `README.md` and `src/main/resources/application.yml` for the complete runtime configuration.
+
+## Usage Examples
+
+This section shows complete descriptor-to-Informatica mappings with concrete examples.
+
+### Example 1: Simple Flat Output Port
+
+**Input: Witboost Descriptor (minimal)**
+
+```yaml
+id: urn:dmb:dp:customers:customer-orders:1
+name: Customer Orders Data Product
+description: Order data for customer analytics
+version: 1.0.0
+dataProductOwnerDisplayName: Alice Johnson
+environment: production
+specific:
+  company: Analytics
+  businessDomain: Customer
+  businessSubdomain: Orders
+  technicalOwners: analytics-team
+  creationDate: 2024-01-15
+  dataProductType: Source-aligned
+  lifeCycleStatus: Active
+  sensitiveInfo: No
+  
+components:
+  - kind: outputport
+    id: urn:dmb:cmp:customers:customer-orders:snowflake-orders
+    name: Snowflake Orders
+    description: Customer order transactions
+    version: 1.0.0
+    technology: Snowflake
+    dataContract:
+      schema:
+        - name: order_id
+          dataType: INTEGER
+          description: Unique order identifier
+          dataLength: 10
+          primaryKey: true
+        - name: customer_name
+          dataType: VARCHAR
+          description: Customer full name
+          dataLength: 100
+        - name: order_date
+          dataType: DATE
+          description: Date order was placed
+    specific:
+      systemName: Sales System
+      serverName: snowflake.company.com
+      databaseName: ANALYTICS_DB
+      schemaName: SALES
+      entityName: orders
+      entityType: Table
+      feedingFrequency: Giornaliero
+      feedingType: PUSH
+      loadingMode: Full
+      isPii: false
+      historicized: true
+      shoppable: true
+```
+
+**Configuration: application.yml**
+
+```yaml
+informatica:
+  descriptor:
+    data-product:
+      children-path: components
+      kind-path: kind
+      id-path: id
+    output-port:
+      kind-value: outputport
+      shoppable-path: shoppable
+    schema:
+      path: dataContract.schema
+```
+
+**Output: Informatica Catalog Models**
+
+```
+DataContract {
+  baseCharacteristics: {
+    identifier: "urn:dmb:dp:customers:customer-orders:1"
+    name: "Customer Orders Data Product"
+    description: "Order data for customer analytics"
+    productOwnerName: "Alice Johnson"
+  }
+  deliveryTargets: [
+    DeliveryTarget {
+      baseCharacteristics: {
+        portName: "Snowflake Orders"
+        portTechnology: "Snowflake"
+        description: "Customer order transactions"
+        version: "1.0.0"
+      }
+      catalogAssetType: DATASET  // Flat output port → DATASET
+      shoppable: true
+      dataAssets: [
+        DataAsset {
+          systemName: "Sales System"
+          serverName: "snowflake.company.com"
+          databaseName: "ANALYTICS_DB"
+          schemaName: "SALES"
+          entityName: "orders"
+          attributes: [
+            AttributeInfo { attributeName: "order_id", ... },
+            AttributeInfo { attributeName: "customer_name", ... },
+            AttributeInfo { attributeName: "order_date", ... }
+          ]
+        }
+      ]
+    }
+  ]
+  marketplaceDeliveryTargets: [
+    // Same as deliveryTargets when shoppable: true
+    DeliveryTarget { ... }
+  ]
+}
+```
+
+**Informatica Catalog Result:**
+- System: "Customer Orders Data Product"
+  - Dataset: "Snowflake Orders" (flat port = Dataset under Product System)
+    - Technical Elements: order_id, customer_name, order_date
+
+**Informatica Marketplace Result:**
+- Data Collection: "Customer Orders Data Product"
+  - Delivery Target: "Snowflake Orders"
+    - Data Assets: 1 asset linking to Dataset in Catalog
+
+---
+
+### Example 2: Nested Output Ports (Hierarchical)
+
+**Input: Witboost Descriptor with nested components**
+
+```yaml
+id: urn:dmb:dp:logistics:shipments:2
+name: Shipment Logistics
+description: End-to-end shipment tracking
+version: 2.0.0
+dataProductOwnerDisplayName: Bob Smith
+environment: production
+specific:
+  company: Logistics
+  businessDomain: Supply Chain
+  businessSubdomain: Shipments
+  technicalOwners: logistics-team
+  creationDate: 2024-02-01
+  dataProductType: Aggregated
+
+components:
+  - kind: outputport
+    id: urn:dmb:cmp:logistics:shipments:container
+    name: Shipment Container
+    description: Container port with nested shipment data
+    version: 2.0.0
+    technology: BigQuery
+    shoppable: true
+    components:
+      - kind: outputport
+        id: urn:dmb:cmp:logistics:shipments:shipments
+        name: Shipments
+        description: Individual shipment records
+        version: 2.0.0
+        technology: BigQuery
+        dataContract:
+          schema:
+            - name: shipment_id
+              dataType: STRING
+              description: Shipment identifier
+              primaryKey: true
+            - name: shipment_date
+              dataType: DATE
+              description: Shipment date
+        specific:
+          systemName: Logistics System
+          serverName: bigquery.googleapis.com
+          databaseName: LOGISTICS
+          schemaName: SHIPMENTS
+          entityName: shipments
+          entityType: Table
+          feedingFrequency: Giornaliero
+          shoppable: true
+        
+      - kind: outputport
+        id: urn:dmb:cmp:logistics:shipments:tracking
+        name: Tracking
+        description: Shipment tracking updates
+        version: 2.0.0
+        technology: BigQuery
+        dataContract:
+          schema:
+            - name: tracking_id
+              dataType: STRING
+              description: Tracking identifier
+              primaryKey: true
+            - name: status
+              dataType: STRING
+              description: Current tracking status
+        specific:
+          systemName: Logistics System
+          serverName: bigquery.googleapis.com
+          databaseName: LOGISTICS
+          schemaName: TRACKING
+          entityName: tracking_events
+          entityType: Table
+          feedingFrequency: Live
+          shoppable: false  // Parent shoppable, child not
+```
+
+**Configuration: application.yml (same as Example 1)**
+
+**Output: Informatica Catalog Models**
+
+```
+DataContract {
+  baseCharacteristics: {
+    identifier: "urn:dmb:dp:logistics:shipments:2"
+    name: "Shipment Logistics"
+  }
+  deliveryTargets: [
+    DeliveryTarget {
+      baseCharacteristics: { portName: "Shipment Container" }
+      catalogAssetType: SYSTEM  // Container with children → SYSTEM
+      shoppable: true
+      dataAssets: [] // Container itself has no schema
+    },
+    DeliveryTarget {
+      baseCharacteristics: { portName: "Shipments" }
+      catalogAssetType: DATASET // Nested child port → DATASET
+      shoppable: true
+      dataAssets: [ DataAsset { entityName: "shipments", ... } ]
+    },
+    DeliveryTarget {
+      baseCharacteristics: { portName: "Tracking" }
+      catalogAssetType: DATASET // Nested child port → DATASET
+      shoppable: false // Independent flag
+      dataAssets: [ DataAsset { entityName: "tracking_events", ... } ]
+    }
+  ]
+  marketplaceDeliveryTargets: [
+    // Only shoppable: true nodes
+    DeliveryTarget { portName: "Shipment Container", shoppable: true },
+    DeliveryTarget { portName: "Shipments", shoppable: true }
+    // Tracking is excluded because shoppable: false
+  ]
+}
+```
+
+**Informatica Catalog Result:**
+- System: "Shipment Logistics"
+  - System: "Shipment Container" (container = System)
+    - Dataset: "Shipments" (child 1 = Dataset under System)
+    - Dataset: "Tracking" (child 2 = Dataset under System)
+
+**Informatica Marketplace Result:**
+- Data Collection: "Shipment Logistics"
+  - Delivery Target: "Shipment Container" (shoppable: true)
+  - Delivery Target: "Shipments" (shoppable: true)
+  - ~~Delivery Target: "Tracking"~~ (excluded: shoppable: false)
+
+---
+
+### Example 3: Marketplace Custom Attributes
+
+**Input: Descriptor with custom attributes**
+
+```yaml
+id: urn:dmb:dp:finance:invoices:3
+name: Finance Invoices
+description: Invoice processing data
+version: 3.0.0
+dataProductOwnerDisplayName: Carol White
+specific:
+  company: Finance
+  businessDomain: Accounting
+  businessSubdomain: Invoices
+  technicalOwners: finance-team
+  creationDate: 2024-03-10
+  customAttributes:
+    Business Owner: carol.white@company.com
+    Data Classification: Confidential
+    Cost Center: FIN-2024
+
+components:
+  - kind: outputport
+    id: urn:dmb:cmp:finance:invoices:postgres
+    name: PostgreSQL Invoices
+    version: 3.0.0
+    technology: PostgreSQL
+    shoppable: true
+    dataContract:
+      schema:
+        - name: invoice_id
+          dataType: VARCHAR
+          description: Invoice identifier
+          primaryKey: true
+    specific:
+      systemName: Finance System
+      databaseName: FINANCE_DB
+      schemaName: INVOICES
+      entityName: invoices
+      entityType: Table
+      feedingFrequency: Giornaliero
+      isPii: false
+```
+
+**Configuration: application.yml with custom attributes**
+
+```yaml
+informatica:
+  marketplace:
+    mapping:
+      custom-attributes:
+        Business Owner:
+          descriptor-path: customAttributes.Business Owner
+          informatica-id: attr-001
+          required: true
+        Data Classification:
+          descriptor-path: customAttributes.Data Classification
+          informatica-id: attr-002
+          required: false
+        Cost Center:
+          descriptor-path: customAttributes.Cost Center
+          informatica-id: attr-003
+          default-value: UNASSIGNED
+```
+
+**Output: Informatica Marketplace**
+
+```json
+{
+  "dataCollection": {
+    "name": "Finance Invoices",
+    "customAttributes": [
+      {
+        "id": "attr-001",
+        "value": "carol.white@company.com"
+      },
+      {
+        "id": "attr-002",
+        "value": "Confidential"
+      },
+      {
+        "id": "attr-003",
+        "value": "FIN-2024"
+      }
+    ]
+  },
+  "deliveryTargets": [
+    {
+      "name": "PostgreSQL Invoices",
+      "shoppable": true
+    }
+  ]
+}
+```
+
+---
+
+### Key Transformation Rules
+
+| Input Pattern | Catalog Result | Marketplace Result |
+|---|---|---|
+| Output port without children | Dataset | Delivery Target (if shoppable) |
+| Output port with children | System with child Datasets | Parent + shoppable children only |
+| `shoppable: true` (default) | Included | Included |
+| `shoppable: false` | Included | Excluded |
+| Nested port shoppable ≠ parent | Independent evaluation | Parent and child filtered separately |
+| Custom attributes provided | N/A | Mapped via `informatica-id` |
+| Missing dataLength | Defaults to 0 | — |
+| No dataContract schema | Parent only, no assets | Can be container node |
